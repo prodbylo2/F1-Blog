@@ -60,7 +60,6 @@
     class:active={isMenuOpen} 
     on:click={toggleMenu}
     on:keydown={(e) => e.key === 'Enter' && toggleMenu()}
-    role="button"
     tabindex="0"
     aria-label="Toggle menu"
     type="button"
