@@ -65,6 +65,7 @@
     font-weight: 700;
     margin-bottom: 1.5rem;
     background: linear-gradient(135deg, var(--primary), var(--accent));
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     line-height: 1.2;
