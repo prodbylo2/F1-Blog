@@ -9,7 +9,7 @@
 
 <section class="hero">
   <div class="hero-content" class:visible={isVisible}>
-    <h1>Welcome to F1 Blog</h1>
+    <h1>Welcome to F1 Insights</h1>
     <p>Your premier destination for Formula 1 statistics, race reviews, and expert analysis</p>
     <div class="cta-buttons">
       <button class="cta primary">Latest Reviews</button>
