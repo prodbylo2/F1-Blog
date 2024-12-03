@@ -1,47 +1,44 @@
-# Svelte + Vite
+# F1-Blog
 
-This template should help get you started developing with Svelte in Vite.
+F1-Blog is a web application that provides statistics and information about Formula 1 races, drivers, and teams. The application is built using Svelte and Vite, offering a modern and responsive user interface.
 
-## Recommended IDE Setup
+## Features
+- **Comparisons Page**: Allows users to compare different F1 drivers, teams, and races. Users can analyze performance metrics, historical data, and other relevant statistics to make informed comparisons.
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
+- **Chat Bot (Copy HaLLMark)**: A chatbot feature that provides users with quick answers to their F1-related queries. The bot can assist with finding information on drivers, races, and statistics, enhancing user interaction and engagement.
 
-## Need an official Svelte framework?
+- **Blogs**: Features articles and posts related to Formula 1. Users can read insights, analyses, and opinions from various contributors, keeping them updated with the latest happenings in the F1 world.
 
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
+- **Discussion Forum**: A platform for F1 enthusiasts to engage in discussions, share opinions, and connect with other fans. The forum encourages community interaction and allows users to participate in conversations about races, drivers, and more.
 
-## Technical considerations
+- **Athlete Profile (like F1 app)**: Provides detailed profiles of F1 drivers, including career statistics, achievements, and personal information. This feature offers users comprehensive insights into their favorite athletes.
 
-**Why use this over SvelteKit?**
+- **Prediction (Lap on Lap)**: A predictive analytics feature that forecasts race outcomes based on historical data and current performance metrics. Users can explore potential scenarios and gain insights into race strategies.
 
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
+- **Driver Market and Latest News**: A section dedicated to the latest updates in the F1 driver market, including transfers, contract renewals, and breaking news. Users can stay informed about the dynamic changes in the F1 landscape.
 
-This template contains as little as possible to get started with Vite + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
+## Setup Guide
 
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
+### Prerequisites
+- Node.js and npm installed on your machine
 
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
+### Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/prodbylo2/F1-Blog.git
+   ```
+2. Navigate to the project directory:
+   ```bash
+   cd F1-Blog
+   ```
+3. Install the dependencies:
+   ```bash
+   npm install
+   ```
 
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
-
-**Why include `.vscode/extensions.json`?**
-
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
-
-**Why enable `checkJs` in the JS template?**
-
-It is likely that most cases of changing variable types in runtime are likely to be accidental, rather than deliberate. This provides advanced typechecking out of the box. Should you like to take advantage of the dynamically-typed nature of JavaScript, it is trivial to change the configuration.
-
-**Why is HMR not preserving my local component state?**
-
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/sveltejs/svelte-hmr/tree/master/packages/svelte-hmr#preservation-of-local-state).
-
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
-
-```js
-// store.js
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
-```
+### Running the Application
+1. Start the development server:
+   ```bash
+   npm run dev
+   ```
+2. Open your browser and go to `http://localhost:5173` to view the application.
