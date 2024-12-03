@@ -1,7 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { fade, slide } from 'svelte/transition';
-  import Stats from './Stats.svelte';
+  import DriverStatistics from './DriverStatistics.svelte';
   
   let isMenuOpen = false;
   let showStats = false;
@@ -41,7 +41,7 @@
     <div class="nav-links" transition:slide>
       <a href="/" class="nav-link">Home</a>
       <a href="/races" class="nav-link">Races</a>
-      <button class="nav-link stats-button" on:click={toggleStats}>Statistics</button>
+      <button class="nav-link stats-button" on:click={toggleStats}>Driver Stats</button>
       <a href="/drivers" class="nav-link">Drivers</a>
       <a href="/teams" class="nav-link">Teams</a>
     </div>
@@ -49,7 +49,7 @@
     <div class="nav-links">
       <a href="/" class="nav-link">Home</a>
       <a href="/races" class="nav-link">Races</a>
-      <button class="nav-link stats-button" on:click={toggleStats}>Statistics</button>
+      <button class="nav-link stats-button" on:click={toggleStats}>Driver Stats</button>
       <a href="/drivers" class="nav-link">Drivers</a>
       <a href="/teams" class="nav-link">Teams</a>
     </div>
@@ -79,8 +79,8 @@
       aria-label="Close stats overlay"
     ></button>
     <div class="stats-content" transition:slide>
-      <button class="close-button" on:click={toggleStats}>×</button>
-      <Stats />
+      <button class="close-button" on:click={toggleStats} type="button" aria-label="Close">×</button>
+      <DriverStatistics />
     </div>
   </div>
 {/if}
