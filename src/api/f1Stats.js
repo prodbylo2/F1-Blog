@@ -6,8 +6,11 @@ const BASE_URL = 'https://api.openf1.org/v1';
 const cache = new Map();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
+const clearCache = () => {
+    cache.clear();
+};
+
 const getCacheKey = (endpoint, params) => {
-    // Ensure consistent type handling for cache keys
     const normalizedParams = Object.fromEntries(
         Object.entries(params).map(([key, value]) => [key, Number(value)])
     );
@@ -29,78 +32,6 @@ const setCacheData = (key, data) => {
     });
 };
 
-// Mock data for development with year-specific data
-const mockData = {
-    2024: {
-        races: [
-            { id: 1, name: 'Bahrain Grand Prix', date: '2024-03-02' },
-            { id: 2, name: 'Saudi Arabian Grand Prix', date: '2024-03-09' },
-            { id: 3, name: 'Australian Grand Prix', date: '2024-03-24' }
-        ],
-        drivers: [
-            { id: 1, name: 'Max Verstappen', number: 1, team: 'Red Bull Racing' },
-            { id: 44, name: 'Lewis Hamilton', number: 44, team: 'Mercedes' },
-            { id: 16, name: 'Charles Leclerc', number: 16, team: 'Ferrari' }
-        ],
-        teams: [
-            { id: 1, name: 'Red Bull Racing', country: 'Austria' },
-            { id: 2, name: 'Mercedes', country: 'Germany' },
-            { id: 3, name: 'Ferrari', country: 'Italy' }
-        ],
-        stats: {
-            driver: {
-                1: { wins: 19, podiums: 21, points: 575, championships: 3 },
-                44: { wins: 2, podiums: 6, points: 234, championships: 7 },
-                16: { wins: 3, podiums: 9, points: 308, championships: 0 }
-            },
-            team: {
-                1: { wins: 21, podiums: 38, points: 860, championships: 6 },
-                2: { wins: 4, podiums: 12, points: 409, championships: 8 },
-                3: { wins: 4, podiums: 14, points: 406, championships: 16 }
-            },
-            race: {
-                1: { winner: 'Max Verstappen', fastestLap: '1:32.608', podium: ['Max Verstappen', 'Sergio Perez', 'Carlos Sainz'] },
-                2: { winner: 'Max Verstappen', fastestLap: '1:31.906', podium: ['Max Verstappen', 'Sergio Perez', 'Charles Leclerc'] },
-                3: { winner: 'Carlos Sainz', fastestLap: '1:20.235', podium: ['Carlos Sainz', 'Charles Leclerc', 'Lando Norris'] }
-            }
-        }
-    },
-    2023: {
-        races: [
-            { id: 1, name: 'Bahrain Grand Prix', date: '2023-03-05' },
-            { id: 2, name: 'Saudi Arabian Grand Prix', date: '2023-03-19' },
-            { id: 3, name: 'Australian Grand Prix', date: '2023-04-02' }
-        ],
-        drivers: [
-            { id: 1, name: 'Max Verstappen', number: 1, team: 'Red Bull Racing' },
-            { id: 44, name: 'Lewis Hamilton', number: 44, team: 'Mercedes' },
-            { id: 16, name: 'Charles Leclerc', number: 16, team: 'Ferrari' }
-        ],
-        teams: [
-            { id: 1, name: 'Red Bull Racing', country: 'Austria' },
-            { id: 2, name: 'Mercedes', country: 'Germany' },
-            { id: 3, name: 'Ferrari', country: 'Italy' }
-        ],
-        stats: {
-            driver: {
-                1: { wins: 15, podiums: 18, points: 454, championships: 2 },
-                44: { wins: 0, podiums: 6, points: 234, championships: 7 },
-                16: { wins: 1, podiums: 6, points: 206, championships: 0 }
-            },
-            team: {
-                1: { wins: 17, podiums: 30, points: 759, championships: 5 },
-                2: { wins: 1, podiums: 8, points: 389, championships: 8 },
-                3: { wins: 1, podiums: 9, points: 356, championships: 16 }
-            },
-            race: {
-                1: { winner: 'Max Verstappen', fastestLap: '1:33.996', podium: ['Max Verstappen', 'Sergio Perez', 'Fernando Alonso'] },
-                2: { winner: 'Sergio Perez', fastestLap: '1:31.906', podium: ['Sergio Perez', 'Max Verstappen', 'Fernando Alonso'] },
-                3: { winner: 'Max Verstappen', fastestLap: '1:20.235', podium: ['Max Verstappen', 'Lewis Hamilton', 'Fernando Alonso'] }
-            }
-        }
-    }
-};
-
 export async function getRaces(season) {
     season = Number(season);
     const cacheKey = getCacheKey('races', { season });
@@ -108,11 +39,20 @@ export async function getRaces(season) {
     if (cached) return cached;
 
     try {
-        const yearData = mockData[season];
-        if (!yearData) {
-            return [];
-        }
-        const races = yearData.races;
+        const response = await axios.get(`${BASE_URL}/sessions`, {
+            params: {
+                year: season,
+                session_type: 'Race'
+            }
+        });
+        
+        const races = response.data.map(race => ({
+            id: race.session_id,
+            name: race.meeting_name,
+            date: race.date_start,
+            circuit: race.circuit_short_name
+        }));
+        
         setCacheData(cacheKey, races);
         return races;
     } catch (error) {
@@ -128,13 +68,61 @@ export async function getDrivers(season) {
     if (cached) return cached;
 
     try {
-        const yearData = mockData[season];
-        if (!yearData) {
+        console.log('Fetching drivers for season:', season);
+        
+        // Get all race sessions for the season
+        const sessionsResponse = await axios.get(`${BASE_URL}/sessions`, {
+            params: {
+                year: season,
+                session_type: 'Race'
+            }
+        });
+        
+        console.log('Sessions response:', sessionsResponse.data);
+        
+        if (!sessionsResponse.data.length) {
+            console.log('No sessions found for season:', season);
             return [];
         }
-        const drivers = yearData.drivers;
-        setCacheData(cacheKey, drivers);
-        return drivers;
+
+        // Get all session IDs for the season
+        const sessionIds = sessionsResponse.data.map(session => session.session_id);
+        
+        // Get drivers from all sessions
+        const driversPromises = sessionIds.map(sessionId => 
+            axios.get(`${BASE_URL}/drivers`, {
+                params: {
+                    session_id: sessionId
+                }
+            })
+        );
+        
+        const driversResponses = await Promise.all(driversPromises);
+        
+        // Combine all driver data
+        const allDrivers = driversResponses.flatMap(response => response.data);
+        
+        console.log('All drivers data:', allDrivers);
+        
+        // Process and deduplicate drivers
+        const drivers = allDrivers
+            .filter(driver => driver.driver_number && driver.first_name && driver.last_name)
+            .map(driver => ({
+                id: driver.driver_number,
+                name: `${driver.first_name} ${driver.last_name}`,
+                number: driver.driver_number,
+                team: driver.team_name || 'Unknown Team'
+            }));
+        
+        // Remove duplicates and sort alphabetically
+        const uniqueDrivers = Array.from(
+            new Map(drivers.map(item => [item.id, item])).values()
+        ).sort((a, b) => a.name.localeCompare(b.name));
+        
+        console.log('Processed drivers for season', season, ':', uniqueDrivers);
+        
+        setCacheData(cacheKey, uniqueDrivers);
+        return uniqueDrivers;
     } catch (error) {
         console.error('Error fetching drivers:', error);
         return [];
@@ -148,13 +136,32 @@ export async function getTeams(season) {
     if (cached) return cached;
 
     try {
-        const yearData = mockData[season];
-        if (!yearData) {
-            return [];
-        }
-        const teams = yearData.teams;
-        setCacheData(cacheKey, teams);
-        return teams;
+        console.log('Fetching teams for season:', season);
+        const response = await axios.get(`${BASE_URL}/constructors`, {
+            params: {
+                year: season
+            }
+        });
+        
+        console.log('Raw team response:', response.data);
+        
+        const teams = response.data
+            .filter(team => team.team_name)
+            .map(team => ({
+                id: team.constructor_id || team.team_id,
+                name: team.team_name,
+                country: team.country || 'Unknown'
+            }));
+        
+        // Remove duplicates based on team name
+        const uniqueTeams = Array.from(
+            new Map(teams.map(item => [item.name, item])).values()
+        ).sort((a, b) => a.name.localeCompare(b.name));
+        
+        console.log('Processed teams:', uniqueTeams);
+        
+        setCacheData(cacheKey, uniqueTeams);
+        return uniqueTeams;
     } catch (error) {
         console.error('Error fetching teams:', error);
         return [];
@@ -169,20 +176,40 @@ export async function getDriverStats(driverId, season) {
     if (cached) return cached;
 
     try {
-        const yearData = mockData[season];
-        if (!yearData) return null;
+        // Get driver details
+        const driverResponse = await axios.get(`${BASE_URL}/drivers`, {
+            params: {
+                driver_number: driverId,
+                year: season
+            }
+        });
 
-        const stats = yearData.stats.driver[driverId];
-        if (stats) {
-            const driver = yearData.drivers.find(d => d.id === driverId);
-            const result = { ...stats, name: driver?.name, season };
-            setCacheData(cacheKey, result);
-            return result;
-        }
-        return null;
+        if (!driverResponse.data.length) return null;
+
+        // Get race results for the driver
+        const resultsResponse = await axios.get(`${BASE_URL}/results`, {
+            params: {
+                driver_number: driverId,
+                year: season
+            }
+        });
+
+        const driver = driverResponse.data[0];
+        const results = resultsResponse.data;
+
+        const stats = {
+            name: `${driver.first_name} ${driver.last_name}`,
+            wins: results.filter(r => r.position === 1).length,
+            podiums: results.filter(r => r.position <= 3).length,
+            points: results.reduce((sum, r) => sum + (r.points || 0), 0),
+            season: season
+        };
+
+        setCacheData(cacheKey, stats);
+        return stats;
     } catch (error) {
         console.error('Error fetching driver stats:', error);
-        throw error;
+        return null;
     }
 }
 
@@ -194,20 +221,32 @@ export async function getTeamStats(teamId, season) {
     if (cached) return cached;
 
     try {
-        const yearData = mockData[season];
-        if (!yearData) return null;
+        // Get team results
+        const response = await axios.get(`${BASE_URL}/results`, {
+            params: {
+                team_id: teamId,
+                year: season
+            }
+        });
 
-        const stats = yearData.stats.team[teamId];
-        if (stats) {
-            const team = yearData.teams.find(t => t.id === teamId);
-            const result = { ...stats, name: team?.name, season };
-            setCacheData(cacheKey, result);
-            return result;
-        }
-        return null;
+        if (!response.data.length) return null;
+
+        const results = response.data;
+        const teamName = results[0]?.team_name;
+
+        const stats = {
+            name: teamName,
+            wins: results.filter(r => r.position === 1).length,
+            podiums: results.filter(r => r.position <= 3).length,
+            points: results.reduce((sum, r) => sum + (r.points || 0), 0),
+            season: season
+        };
+
+        setCacheData(cacheKey, stats);
+        return stats;
     } catch (error) {
         console.error('Error fetching team stats:', error);
-        throw error;
+        return null;
     }
 }
 
@@ -219,19 +258,39 @@ export async function getRaceStats(raceId, season) {
     if (cached) return cached;
 
     try {
-        const yearData = mockData[season];
-        if (!yearData) return null;
+        // Get session details
+        const sessionResponse = await axios.get(`${BASE_URL}/sessions`, {
+            params: {
+                session_id: raceId
+            }
+        });
 
-        const stats = yearData.stats.race[raceId];
-        if (stats) {
-            const race = yearData.races.find(r => r.id === raceId);
-            const result = { ...stats, name: race?.name, season };
-            setCacheData(cacheKey, result);
-            return result;
-        }
-        return null;
+        if (!sessionResponse.data.length) return null;
+
+        // Get race results
+        const resultsResponse = await axios.get(`${BASE_URL}/results`, {
+            params: {
+                session_id: raceId
+            }
+        });
+
+        const session = sessionResponse.data[0];
+        const results = resultsResponse.data.sort((a, b) => a.position - b.position);
+
+        const stats = {
+            name: session.meeting_name,
+            winner: results[0] ? `${results[0].first_name} ${results[0].last_name}` : 'Unknown',
+            fastestLap: results.reduce((fastest, r) => 
+                r.fastest_lap_time && (!fastest || r.fastest_lap_time < fastest) ? r.fastest_lap_time : fastest, null
+            ),
+            podium: results.slice(0, 3).map(r => `${r.first_name} ${r.last_name}`),
+            season: season
+        };
+
+        setCacheData(cacheKey, stats);
+        return stats;
     } catch (error) {
         console.error('Error fetching race stats:', error);
-        throw error;
+        return null;
     }
 }

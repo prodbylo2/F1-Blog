@@ -43,6 +43,7 @@
         loading = true;
         error = null;
         try {
+            console.log('Loading data for season:', selectedSeason);
             // Clear previous selections when season changes
             selectedDriver = null;
             selectedTeam = null;
@@ -52,11 +53,25 @@
             raceStats = null;
 
             // Load new data for the selected season
-            [races, drivers, teams] = await Promise.all([
+            const [racesData, driversData, teamsData] = await Promise.all([
                 getRaces(selectedSeason),
                 getDrivers(selectedSeason),
                 getTeams(selectedSeason)
             ]);
+
+            console.log('Received data:', {
+                races: racesData,
+                drivers: driversData,
+                teams: teamsData
+            });
+
+            races = racesData;
+            drivers = driversData;
+            teams = teamsData;
+
+            if (!races.length && !drivers.length && !teams.length) {
+                error = `No data available for ${selectedSeason} season`;
+            }
         } catch (err) {
             console.error('Error loading season data:', err);
             error = 'Error loading season data. Please try again later.';
