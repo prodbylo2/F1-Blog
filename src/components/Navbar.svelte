@@ -1,12 +1,23 @@
 <script>
   import { onMount } from 'svelte';
   import { fade, slide } from 'svelte/transition';
+  import Stats from './Stats.svelte';
+  
   let isMenuOpen = false;
+  let showStats = false;
   let scrollY;
 
   // Toggle mobile menu
   const toggleMenu = () => {
     isMenuOpen = !isMenuOpen;
+  };
+
+  // Toggle stats modal
+  const toggleStats = () => {
+    showStats = !showStats;
+    if (isMenuOpen) {
+      isMenuOpen = false;
+    }
   };
 
   // Handle scroll effects
@@ -30,7 +41,7 @@
     <div class="nav-links" transition:slide>
       <a href="/" class="nav-link">Home</a>
       <a href="/races" class="nav-link">Races</a>
-      <a href="/stats" class="nav-link">Statistics</a>
+      <button class="nav-link stats-button" on:click={toggleStats}>Statistics</button>
       <a href="/drivers" class="nav-link">Drivers</a>
       <a href="/teams" class="nav-link">Teams</a>
     </div>
@@ -38,26 +49,41 @@
     <div class="nav-links">
       <a href="/" class="nav-link">Home</a>
       <a href="/races" class="nav-link">Races</a>
-      <a href="/stats" class="nav-link">Statistics</a>
+      <button class="nav-link stats-button" on:click={toggleStats}>Statistics</button>
       <a href="/drivers" class="nav-link">Drivers</a>
       <a href="/teams" class="nav-link">Teams</a>
     </div>
   {/if}
 
-  <div 
+  <button 
     class="hamburger" 
     class:active={isMenuOpen} 
     on:click={toggleMenu}
     on:keydown={(e) => e.key === 'Enter' && toggleMenu()}
-    role="button"
     tabindex="0"
     aria-label="Toggle menu"
+    type="button"
   >
     <span></span>
     <span></span>
     <span></span>
-  </div>
+  </button>
 </nav>
+
+{#if showStats}
+  <div class="stats-modal" transition:fade>
+    <button 
+      class="stats-overlay" 
+      on:click={toggleStats}
+      type="button"
+      aria-label="Close stats overlay"
+    ></button>
+    <div class="stats-content" transition:slide>
+      <button class="close-button" on:click={toggleStats}>×</button>
+      <Stats />
+    </div>
+  </div>
+{/if}
 
 <style>
   /* Variables */
@@ -197,5 +223,88 @@
     .hamburger.active span:last-child {
       transform: translateY(-8px) rotate(-45deg);
     }
+  }
+
+  .stats-button {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: inherit;
+    font-family: inherit;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .stats-button:hover {
+    color: var(--accent);
+  }
+
+  .stats-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+  }
+
+  .stats-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+  }
+
+  .stats-content {
+    position: relative;
+    background: var(--background);
+    border-radius: 8px;
+    width: 90%;
+    max-width: 1200px;
+    max-height: 90vh;
+    overflow-y: auto;
+    z-index: 2001;
+    padding: 2rem;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+  }
+
+  .close-button {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 2rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    line-height: 1;
+    z-index: 2002;
+  }
+
+  .close-button:hover {
+    color: var(--accent);
+  }
+
+  /* Make sure scrollbar matches theme */
+  .stats-content::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .stats-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+
+  .stats-content::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 4px;
   }
 </style>
