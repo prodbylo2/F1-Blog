@@ -39,6 +39,16 @@
 
   main {
     width: 100%;
+    max-width: 1400px; /* Increased max-width */
     min-height: 100vh;
+    text-align: center;
+    padding: 1em;
+    margin: 0 auto; /* Center the content */
+  }
+
+  @media (max-width: 768px) {
+    main {
+      padding: 0.5em;
+    }
   }
 </style>
