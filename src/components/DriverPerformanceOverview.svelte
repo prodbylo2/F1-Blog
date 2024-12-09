@@ -54,7 +54,10 @@
             pointsChartInstance.setOption({
                 title: {
                     text: 'Points Progression',
-                    left: 'center'
+                    left: 'center',
+                    textStyle: {
+                        color: '#fff'
+                    }
                 },
                 tooltip: {
                     trigger: 'axis',
@@ -70,17 +73,45 @@
                 },
                 xAxis: {
                     type: 'category',
-                    data: driverStats.pointsProgression.map((p: any) => p.race)
+                    data: driverStats.pointsProgression.map((p: { race: any; }) => p.race),
+                    axisLabel: {
+                        color: '#fff'
+                    }
                 },
                 yAxis: {
                     type: 'value',
-                    name: 'Cumulative Points'
+                    name: 'Cumulative Points',
+                    nameTextStyle: {
+                        color: '#fff'
+                    },
+                    axisLabel: {
+                        color: '#fff'
+                    }
                 },
                 series: [{
-                    data: driverStats.pointsProgression.map((p: any) => p.points),
+                    data: driverStats.pointsProgression.map((p: { points: any; }) => p.points),
                     type: 'line',
                     smooth: true,
-                    color: '#5470C6'
+                    lineStyle: {
+                        width: 3
+                    },
+                    color: '#5470C6',
+                    markPoint: {
+                        symbol: 'circle',
+                        symbolSize: 40,
+                        data: driverStats.raceResults.map((result: { racePoints: any; }, index: string | number) => {
+                            const racePoints = result.racePoints;
+                            return {
+                                value: racePoints === 25 ? '🏆' : '',
+                                coord: [index, driverStats.pointsProgression[index].points],
+                                symbol: racePoints === 25 ? 'circle' : 'none',
+                                symbolSize: 40,
+                                itemStyle: {
+                                    color: 'rgba(255, 30, 30, 0.8)'
+                                }
+                            };
+                        }).filter((point: { value: string; }) => point.value !== '')
+                    }
                 }]
             });
         }
@@ -91,25 +122,66 @@
             positionChartInstance.setOption({
                 title: {
                     text: 'Race Positions',
-                    left: 'center'
+                    left: 'center',
+                    textStyle: {
+                        color: '#fff'
+                    }
                 },
                 tooltip: {
-                    trigger: 'axis'
+                    trigger: 'axis',
+                    formatter: function(params: {
+                        value: any; name: any; 
+                    }[]) {
+                        const position = params[0].value;
+                        return `
+                            <b>${params[0].name}</b><br/>
+                            Position: ${position || 'DNF'}
+                        `;
+                    }
                 },
                 xAxis: {
                     type: 'category',
-                    data: driverStats.positionChanges.map((p: any) => p.race)
+                    data: driverStats.positionChanges.map((p: { race: any; }) => p.race),
+                    axisLabel: {
+                        color: '#fff'
+                    }
                 },
                 yAxis: {
                     type: 'value',
                     name: 'Position',
-                    inverse: true
+                    inverse: true,
+                    min: 1,
+                    max: 20,
+                    nameTextStyle: {
+                        color: '#fff'
+                    },
+                    axisLabel: {
+                        color: '#fff'
+                    }
                 },
                 series: [{
-                    data: driverStats.positionChanges.map((p: any) => p.position),
+                    data: driverStats.positionChanges.map((p: { position: any; }) => p.position),
                     type: 'line',
                     smooth: true,
-                    color: '#EE6666'
+                    lineStyle: {
+                        width: 3
+                    },
+                    color: '#EE6666',
+                    markPoint: {
+                        symbol: 'circle',
+                        symbolSize: 40,
+                        data: driverStats.raceResults.map((result: { position: number; }, index: any) => {
+                            return {
+                                value: result.position === 1 ? '🥇' : '',
+                                coord: [index, result.position],
+                                symbol: result.position === 1 ? 'circle' : 'none',
+                                symbolSize: 40,
+                                itemStyle: {
+                                    color: 'rgba(255, 215, 0, 0.8)'
+                                }
+                            };
+                        }).filter((point: { value: string; }) => point.value !== '')
+                    }
                 }]
             });
         }
