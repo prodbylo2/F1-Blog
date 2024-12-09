@@ -9,7 +9,8 @@
     } from 'echarts/components';
     import { 
         LineChart,
-        ScatterChart
+        ScatterChart,
+        BarChart
     } from 'echarts/charts';
     import { 
         CanvasRenderer 
@@ -25,6 +26,7 @@
         LegendComponent,
         LineChart,
         ScatterChart,
+        BarChart,
         CanvasRenderer
     ]);
 
@@ -34,8 +36,12 @@
     let driverStats: any = null;
     let pointsChartInstance: echarts.ECharts | null = null;
     let positionChartInstance: echarts.ECharts | null = null;
+    let qualifyingDeltaChartInstance: echarts.ECharts | null = null;
+    let headToHeadChartInstance: echarts.ECharts | null = null;
     let pointsChartEl: HTMLElement;
     let positionChartEl: HTMLElement;
+    let qualifyingDeltaChartEl: HTMLElement;
+    let headToHeadChartEl: HTMLElement;
 
     // Reactive statement to update stats when driver changes
     $: if (driverId) {
@@ -51,6 +57,8 @@
         // Destroy existing charts
         if (pointsChartInstance) pointsChartInstance.dispose();
         if (positionChartInstance) positionChartInstance.dispose();
+        if (qualifyingDeltaChartInstance) qualifyingDeltaChartInstance.dispose();
+        if (headToHeadChartInstance) headToHeadChartInstance.dispose();
 
         // Points Progression Chart
         if (pointsChartEl && driverStats) {
@@ -201,12 +209,117 @@
                 ]
             });
         }
+
+        // Qualifying vs Race Position Delta Chart
+        if (qualifyingDeltaChartEl && driverStats) {
+            qualifyingDeltaChartInstance = echarts.init(qualifyingDeltaChartEl);
+            qualifyingDeltaChartInstance.setOption({
+                title: {
+                    text: 'Qualifying vs Race Position Delta',
+                    left: 'center',
+                    textStyle: { color: '#fff' }
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function(params) {
+                        const delta = driverStats.qualifyingVsRacePositionDelta[params[0].dataIndex];
+                        return `
+                            <b>${delta.race}</b><br/>
+                            Grid Position: ${delta.gridPosition}<br/>
+                            Finish Position: ${delta.finishPosition}<br/>
+                            Position Delta: ${delta.delta > 0 ? '+' : ''}${delta.delta}
+                        `;
+                    }
+                },
+                xAxis: {
+                    type: 'category',
+                    data: driverStats.qualifyingVsRacePositionDelta.map(d => d.race),
+                    axisLabel: { color: '#fff', rotate: 45 }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'Position Change',
+                    nameTextStyle: { color: '#fff' },
+                    axisLabel: { color: '#fff' }
+                },
+                series: [{
+                    data: driverStats.qualifyingVsRacePositionDelta.map(d => d.delta),
+                    type: 'bar',
+                    itemStyle: {
+                        color: function(params) {
+                            return params.value > 0 ? '#4CAF50' : 
+                                   params.value < 0 ? '#F44336' : '#2196F3';
+                        }
+                    }
+                }]
+            });
+        }
+
+        // Head-to-Head Comparison Chart
+        if (headToHeadChartEl && driverStats && driverStats.headToHeadComparison) {
+            headToHeadChartInstance = echarts.init(headToHeadChartEl);
+            headToHeadChartInstance.setOption({
+                title: {
+                    show: false  // Remove the title
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    },
+                    formatter: function(params) {
+                        const comparison = driverStats.headToHeadComparison.headToHeadResults[params[0].dataIndex];
+                        return `
+                            <b>${comparison.race}</b><br/>
+                            ${getDriverName(driverId)}: ${comparison.driverPosition || 'DNF'}<br/>
+                            ${driverStats.headToHeadComparison.teammate}: ${comparison.teammatePosition || 'DNF'}
+                        `;
+                    }
+                },
+                legend: {
+                    data: [getDriverName(driverId), driverStats.headToHeadComparison.teammate],
+                    textStyle: { color: '#fff' }
+                },
+                xAxis: {
+                    type: 'category',
+                    data: driverStats.headToHeadComparison.headToHeadResults.map(d => d.race),
+                    axisLabel: { color: '#fff', rotate: 45 }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'Race Position',
+                    inverse: true,
+                    min: 1,
+                    max: 20,
+                    nameTextStyle: { color: '#fff' },
+                    axisLabel: { color: '#fff' }
+                },
+                series: [
+                    {
+                        name: getDriverName(driverId),
+                        data: driverStats.headToHeadComparison.headToHeadResults.map(d => d.driverPosition),
+                        type: 'line',
+                        smooth: true,
+                        color: '#3498DB'
+                    },
+                    {
+                        name: driverStats.headToHeadComparison.teammate,
+                        data: driverStats.headToHeadComparison.headToHeadResults.map(d => d.teammatePosition),
+                        type: 'line',
+                        smooth: true,
+                        color: '#E74C3C'
+                    }
+                ]
+            });
+        }
     }
 
     // Handle window resize
     function handleResize() {
         if (pointsChartInstance) pointsChartInstance.resize();
         if (positionChartInstance) positionChartInstance.resize();
+        if (qualifyingDeltaChartInstance) qualifyingDeltaChartInstance.resize();
+        if (headToHeadChartInstance) headToHeadChartInstance.resize();
     }
 
     // Driver selection dropdown
@@ -226,6 +339,8 @@
         // Clean up charts and event listeners
         if (pointsChartInstance) pointsChartInstance.dispose();
         if (positionChartInstance) positionChartInstance.dispose();
+        if (qualifyingDeltaChartInstance) qualifyingDeltaChartInstance.dispose();
+        if (headToHeadChartInstance) headToHeadChartInstance.dispose();
         window.removeEventListener('resize', handleResize);
     });
 
@@ -281,6 +396,56 @@
             <div class="chart-wrapper">
                 <div bind:this={positionChartEl} class="echarts-container"></div>
             </div>
+            <div class="chart-wrapper">
+                <div bind:this={qualifyingDeltaChartEl} class="echarts-container"></div>
+            </div>
+            {#if driverStats.headToHeadComparison}
+                <div class="chart-wrapper">
+                    <div class="head-to-head-container">
+                        <div class="chart-header">
+                            <h3>Head-to-Head: {getDriverName(driverId)} vs {driverStats.headToHeadComparison.teammate}</h3>
+                        </div>
+                        <div bind:this={headToHeadChartEl} class="echarts-container"></div>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <div class="head-to-head-stats-container">
+                        <div class="chart-header">
+                            <h3>Season Performance Comparison</h3>
+                        </div>
+                        <div class="head-to-head-stats-grid">
+                            <div class="head-to-head-stat-column">
+                                <div class="head-to-head-stat-item">
+                                    <span class="head-to-head-stat-label">Total Races</span>
+                                    <span class="head-to-head-stat-value">{driverStats.headToHeadComparison.stats.totalRaces}</span>
+                                </div>
+                                <div class="head-to-head-stat-item">
+                                    <span class="head-to-head-stat-label">{driverStats.headToHeadComparison.teammate} Wins</span>
+                                    <span class="head-to-head-stat-value">{driverStats.headToHeadComparison.stats.teammateWins}</span>
+                                </div>
+                                <div class="head-to-head-stat-item">
+                                    <span class="head-to-head-stat-label">{driverStats.headToHeadComparison.teammate} Win %</span>
+                                    <span class="head-to-head-stat-value">{driverStats.headToHeadComparison.stats.teammateWinPercentage.toFixed(1)}%</span>
+                                </div>
+                            </div>
+                            <div class="head-to-head-stat-column">
+                                <div class="head-to-head-stat-item">
+                                    <span class="head-to-head-stat-label">Completed Races</span>
+                                    <span class="head-to-head-stat-value">{driverStats.headToHeadComparison.stats.completedRaces}</span>
+                                </div>
+                                <div class="head-to-head-stat-item">
+                                    <span class="head-to-head-stat-label">{getDriverName(driverId)} Wins</span>
+                                    <span class="head-to-head-stat-value">{driverStats.headToHeadComparison.stats.driverWins}</span>
+                                </div>
+                                <div class="head-to-head-stat-item">
+                                    <span class="head-to-head-stat-label">{getDriverName(driverId)} Win %</span>
+                                    <span class="head-to-head-stat-value">{driverStats.headToHeadComparison.stats.driverWinPercentage.toFixed(1)}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {/if}
         </div>
 
         <div class="race-results-container">
@@ -382,17 +547,17 @@
     }
 
     .stat-label {
-        font-size: 0.9rem;
-        color: var(--text);
-        opacity: 0.8;
-        margin-bottom: 0.5rem;
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        margin-bottom: 0.25rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
     .stat-value {
-        font-size: 2rem;
+        color: var(--text);
         font-weight: bold;
-        color: var(--primary);
-        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
     }
 
     .stat-subtext {
@@ -419,6 +584,84 @@
     .echarts-container {
         width: 100%;
         height: 300px;
+    }
+
+    .head-to-head-container {
+        display: flex;
+        flex-direction: column;
+        background-color: var(--secondary);
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .chart-header h3 {
+        color: var(--text);
+        margin: 0;
+        padding: 1rem;
+        background-color: rgba(255, 255, 255, 0.05);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .head-to-head-stats-container {
+        background-color: var(--secondary);
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .head-to-head-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0;
+        background-color: rgba(255, 255, 255, 0.05);
+        padding: 1rem;
+    }
+
+    .head-to-head-stat-column {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 0 1rem;
+    }
+
+    .head-to-head-stat-item {
+        margin-bottom: 1.5rem;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+    }
+
+    .head-to-head-stat-item::after {
+        content: '';
+        position: absolute;
+        bottom: -0.75rem;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 50%;
+        height: 1px;
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .head-to-head-stat-item:last-child::after {
+        display: none;
+    }
+
+    .head-to-head-stat-label {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        margin-bottom: 0.25rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .head-to-head-stat-value {
+        color: var(--text);
+        font-weight: bold;
+        font-size: 1.1rem;
     }
 
     .race-results-container {
@@ -483,16 +726,6 @@
     @media (max-width: 768px) {
         .header {
             flex-direction: column;
-            gap: 1rem;
-            text-align: center;
-        }
-
-        .stats-grid {
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        }
-
-        .charts-container {
-            grid-template-columns: 1fr;
         }
     }
 </style>

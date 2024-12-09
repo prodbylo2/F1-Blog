@@ -1,5 +1,81 @@
 import raceData from '../../../data/2024_data.json';
 
+// Add team mapping
+const TEAM_MAPPING = {
+    'red_bull': ['max_verstappen', 'perez'],
+    'ferrari': ['leclerc', 'sainz'],
+    'mercedes': ['hamilton', 'russell'],
+    'mclaren': ['norris', 'piastri'],
+    'aston_martin': ['alonso', 'stroll'],
+    'alpine': ['ocon', 'gasly'],
+    'alfa_romeo': ['bottas', 'zhou'],
+    'haas': ['magnussen', 'hulkenberg'],
+    'williams': ['albon', 'sargeant'],
+    'rb': ['ricciardo', 'tsunoda']
+};
+
+export function getHeadToHeadComparison(driverId, raceResults) {
+    console.log('Driver ID:', driverId);
+    console.log('Team Mapping:', TEAM_MAPPING);
+    
+    const driverTeam = Object.keys(TEAM_MAPPING).find(team => 
+        TEAM_MAPPING[team].includes(driverId)
+    );
+    
+    console.log('Driver Team:', driverTeam);
+    
+    if (!driverTeam) {
+        console.warn(`No team found for driver: ${driverId}`);
+        return null;
+    }
+
+    const teammate = TEAM_MAPPING[driverTeam].find(id => id !== driverId);
+    
+    console.log('Teammate:', teammate);
+    
+    // Get all race results for the entire season
+    const races = Object.values(raceData.races['2024']);
+    
+    // Collect race results for both driver and teammate
+    const headToHeadResults = races.map(race => {
+        const driverRaceResult = race.results.race.find(r => r.driverId === driverId);
+        const teammateRaceResult = race.results.race.find(r => r.driverId === teammate);
+        
+        return {
+            race: race.info.name,
+            driverPosition: driverRaceResult?.position || null,
+            teammatePosition: teammateRaceResult?.position || null
+        };
+    });
+
+    // Calculate head-to-head statistics
+    const totalRaces = headToHeadResults.length;
+    const completedRaces = headToHeadResults.filter(
+        race => race.driverPosition !== null && race.teammatePosition !== null
+    );
+    
+    const driverWins = completedRaces.filter(
+        race => race.driverPosition < race.teammatePosition
+    ).length;
+    
+    const teammateWins = completedRaces.filter(
+        race => race.teammatePosition < race.driverPosition
+    ).length;
+
+    return {
+        teammate: getDriverName(teammate),
+        headToHeadResults: headToHeadResults,
+        stats: {
+            totalRaces,
+            completedRaces: completedRaces.length,
+            driverWins,
+            teammateWins,
+            driverWinPercentage: (driverWins / completedRaces.length) * 100,
+            teammateWinPercentage: (teammateWins / completedRaces.length) * 100
+        }
+    };
+}
+
 export function getDriverSeasonStats(driverId) {
     const races = Object.values(raceData.races['2024']);
     
@@ -12,10 +88,11 @@ export function getDriverSeasonStats(driverId) {
             position: result?.position || null,
             racePoints: result?.points || 0,
             sprintPoints: sprintResult?.points || 0,
-            points: (result?.points || 0) + (sprintResult?.points || 0),  // Total points for the weekend
+            points: (result?.points || 0) + (sprintResult?.points || 0),
             gridPosition: result?.gridPosition || null,
             status: result?.status || null,
-            performance: race.driverPerformance[driverId] || null
+            performance: race.driverPerformance[driverId] || null,
+            driverId: driverId
         };
     });
 
@@ -60,6 +137,16 @@ export function getDriverSeasonStats(driverId) {
         // Total points (including sprint points)
         totalPoints: raceResults.reduce((acc, race) => acc + race.points, 0),
 
+        // New Performance Metrics
+        qualifyingVsRacePositionDelta: raceResults.map(race => ({
+            race: race.raceName,
+            gridPosition: race.gridPosition,
+            finishPosition: race.position,
+            delta: (race.gridPosition || 0) - (race.position || 0)
+        })),
+        
+        headToHeadComparison: getHeadToHeadComparison(driverId, raceResults),
+
         // Raw race results for detailed analysis
         raceResults: raceResults
     };
@@ -82,24 +169,26 @@ export function getAllDriverIds() {
 
 export function getDriverName(driverId) {
     const driverNames = {
-        'VER': 'Max Verstappen',
-        'PER': 'Sergio Perez',
-        'LEC': 'Charles Leclerc',
-        'SAI': 'Carlos Sainz',
-        'NOR': 'Lando Norris',
-        'RIC': 'Daniel Ricciardo',
-        'HAM': 'Lewis Hamilton',
-        'RUS': 'George Russell',
-        'ALO': 'Fernando Alonso',
-        'STR': 'Lance Stroll',
-        'OCO': 'Esteban Ocon',
-        'GAZ': 'Pierre Gasly',
-        'BOT': 'Valtteri Bottas',
-        'ZHO': 'Guanyu Zhou',
-        'ALB': 'Alexander Albon',
-        'SAR': 'Logan Sargeant',
-        'MAG': 'Kevin Magnussen',
-        'HUL': 'Nico Hulkenberg'
+        'max_verstappen': 'Max Verstappen',
+        'perez': 'Sergio Perez',
+        'leclerc': 'Charles Leclerc',
+        'sainz': 'Carlos Sainz',
+        'norris': 'Lando Norris',
+        'piastri': 'Oscar Piastri',
+        'hamilton': 'Lewis Hamilton',
+        'russell': 'George Russell',
+        'alonso': 'Fernando Alonso',
+        'stroll': 'Lance Stroll',
+        'ocon': 'Esteban Ocon',
+        'gasly': 'Pierre Gasly',
+        'bottas': 'Valtteri Bottas',
+        'zhou': 'Guanyu Zhou',
+        'magnussen': 'Kevin Magnussen',
+        'hulkenberg': 'Nico Hulkenberg',
+        'albon': 'Alexander Albon',
+        'sargeant': 'Logan Sargeant',
+        'ricciardo': 'Daniel Ricciardo',
+        'tsunoda': 'Yuki Tsunoda'
     };
 
     return driverNames[driverId] || driverId;
