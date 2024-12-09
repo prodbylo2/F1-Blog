@@ -1,11 +1,14 @@
 <script>
   import Navbar from './components/Navbar.svelte';
   import Hero from './components/Hero.svelte';
+  import DriverPerformanceOverview from './components/DriverPerformanceOverview.svelte';
 </script>
 
 <main>
   <Navbar />
   <Hero />
+  <h1>F1 2024 Analytics</h1>
+  <DriverPerformanceOverview />
 </main>
 
 <style>
@@ -39,6 +42,26 @@
 
   main {
     width: 100%;
+    max-width: 1400px; /* Increased max-width */
     min-height: 100vh;
+    text-align: center;
+    padding: 1em;
+    margin: 0 auto; /* Center the content */
+  }
+
+  h1 {
+    color: var(--primary);
+    font-size: 2.5em;
+    margin-bottom: 1em;
+  }
+
+  @media (max-width: 768px) {
+    main {
+      padding: 0.5em;
+    }
+
+    h1 {
+      font-size: 2em;
+    }
   }
 </style>

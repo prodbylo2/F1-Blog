@@ -1,17 +1,15 @@
 <script>
     import { onMount } from 'svelte';
-    import { getSeasons, getDriversForSeason, getTeamsForSeason, getFilteredStats } from '../api/driverStats';
+    import { getSeasons, getDriversForSeason, getFilteredStats } from '../api/driverStats';
 
     // Filter states
     let selectedSeason = new Date().getFullYear().toString();
     let selectedDriver = '';
-    let selectedTeam = '';
     let fetchingStats = false;
 
     // Data states
     let seasons = [];
     let drivers = [];
-    let teams = [];
     let stats = null;
     let loading = true;
     let error = null;
@@ -30,27 +28,26 @@
 
     async function loadSeasonData(season) {
         try {
-            const [driversData, teamsData] = await Promise.all([
-                getDriversForSeason(season),
-                getTeamsForSeason(season)
-            ]);
-            drivers = driversData;
-            teams = teamsData;
+            drivers = await getDriversForSeason(season);
             selectedDriver = '';
-            selectedTeam = '';
         } catch (err) {
             error = 'Failed to load season data';
         }
+    }
+
+    $: if (selectedSeason) {
+        loadSeasonData(selectedSeason);
     }
 
     async function fetchStats() {
         try {
             fetchingStats = true;
             error = null;
+            const driver = drivers.find(d => d.id === selectedDriver);
             stats = await getFilteredStats({
                 season: selectedSeason,
                 driverId: selectedDriver,
-                constructorId: selectedTeam
+                constructorId: driver?.constructor?.id || ''
             });
             fetchingStats = false;
         } catch (err) {
@@ -59,18 +56,10 @@
         }
     }
 
-    $: if (selectedSeason) {
-        loadSeasonData(selectedSeason);
-    }
-
     function getSelectedEntityName() {
         if (selectedDriver) {
             const driver = drivers.find(d => d.id === selectedDriver);
-            return driver ? `${driver.firstName} ${driver.lastName}` : '';
-        }
-        if (selectedTeam) {
-            const team = teams.find(t => t.id === selectedTeam);
-            return team ? team.name : '';
+            return driver ? `${driver.firstName} ${driver.lastName} - ${driver.constructor.name}` : '';
         }
         return 'All Drivers';
     }
@@ -99,15 +88,8 @@
                     <option value="">All Drivers</option>
                     {#each drivers as driver}
                         <option value={driver.id}>
-                            {driver.firstName} {driver.lastName}
+                            {driver.firstName} {driver.lastName} - {driver.constructor.name}
                         </option>
-                    {/each}
-                </select>
-
-                <select bind:value={selectedTeam} class="f1-select">
-                    <option value="">All Teams</option>
-                    {#each teams as team}
-                        <option value={team.id}>{team.name}</option>
                     {/each}
                 </select>
             </div>
