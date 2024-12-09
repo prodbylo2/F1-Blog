@@ -2,26 +2,30 @@
     import { onMount, onDestroy } from 'svelte';
     import * as echarts from 'echarts/core';
     import { 
-        LineChart, 
-    } from 'echarts/charts';
-    import { 
-        GridComponent, 
         TitleComponent,
         TooltipComponent,
+        GridComponent,
+        LegendComponent 
     } from 'echarts/components';
+    import { 
+        LineChart,
+        ScatterChart
+    } from 'echarts/charts';
     import { 
         CanvasRenderer 
     } from 'echarts/renderers';
-    import { fade, slide } from 'svelte/transition';
+    import { slide } from 'svelte/transition';
     import { getDriverSeasonStats, getAllDriverIds, getDriverName } from '../lib/utils/driverAnalytics';
 
     // Register necessary ECharts components
     echarts.use([
-        LineChart,
-        GridComponent,
-        CanvasRenderer,
         TitleComponent,
-        TooltipComponent
+        TooltipComponent,
+        GridComponent,
+        LegendComponent,
+        LineChart,
+        ScatterChart,
+        CanvasRenderer
     ]);
 
     // Set a default driver
@@ -88,31 +92,43 @@
                         color: '#fff'
                     }
                 },
-                series: [{
-                    data: driverStats.pointsProgression.map((p: { points: any; }) => p.points),
-                    type: 'line',
-                    smooth: true,
-                    lineStyle: {
-                        width: 3
+                series: [
+                    {
+                        data: driverStats.pointsProgression.map((p: { points: any; }) => p.points),
+                        type: 'line',
+                        smooth: true,
+                        lineStyle: {
+                            width: 3
+                        },
+                        color: '#5470C6'
                     },
-                    color: '#5470C6',
-                    markPoint: {
+                    {
+                        name: 'Race Wins',
+                        type: 'scatter',
+                        data: driverStats.raceResults.map((result: { racePoints: number; }, index: number) => 
+                            (result.racePoints === 25 || result.racePoints === 26) ? driverStats.pointsProgression[index].points : null
+                        ),
                         symbol: 'circle',
-                        symbolSize: 40,
-                        data: driverStats.raceResults.map((result: { racePoints: any; }, index: string | number) => {
-                            const racePoints = result.racePoints;
-                            return {
-                                value: racePoints === 25 ? '🏆' : '',
-                                coord: [index, driverStats.pointsProgression[index].points],
-                                symbol: racePoints === 25 ? 'circle' : 'none',
-                                symbolSize: 40,
-                                itemStyle: {
-                                    color: 'rgba(255, 30, 30, 0.8)'
-                                }
-                            };
-                        }).filter((point: { value: string; }) => point.value !== '')
+                        symbolSize: 12,
+                        itemStyle: {
+                            color: '#FFD700'
+                        },
+                        z: 10
+                    },
+                    {
+                        name: 'Grand Slam',
+                        type: 'scatter',
+                        data: driverStats.raceResults.map((result: { racePoints: number; }, index: number) => 
+                            result.racePoints === 26 ? driverStats.pointsProgression[index].points : null
+                        ),
+                        symbol: 'circle',
+                        symbolSize: 12,
+                        itemStyle: {
+                            color: '#800080'  // Purple color
+                        },
+                        z: 11  // Higher z-index to appear above gold circles
                     }
-                }]
+                ]
             });
         }
 
@@ -159,30 +175,30 @@
                         color: '#fff'
                     }
                 },
-                series: [{
-                    data: driverStats.positionChanges.map((p: { position: any; }) => p.position),
-                    type: 'line',
-                    smooth: true,
-                    lineStyle: {
-                        width: 3
+                series: [
+                    {
+                        data: driverStats.positionChanges.map((p: { position: any; }) => p.position),
+                        type: 'line',
+                        smooth: true,
+                        lineStyle: {
+                            width: 3
+                        },
+                        color: '#EE6666'
                     },
-                    color: '#EE6666',
-                    markPoint: {
+                    {
+                        name: 'Race Wins',
+                        type: 'scatter',
+                        data: driverStats.raceResults.map((result: { position: number; }, index: number) => 
+                            result.position === 1 ? result.position : null
+                        ),
                         symbol: 'circle',
-                        symbolSize: 40,
-                        data: driverStats.raceResults.map((result: { position: number; }, index: any) => {
-                            return {
-                                value: result.position === 1 ? '🥇' : '',
-                                coord: [index, result.position],
-                                symbol: result.position === 1 ? 'circle' : 'none',
-                                symbolSize: 40,
-                                itemStyle: {
-                                    color: 'rgba(255, 215, 0, 0.8)'
-                                }
-                            };
-                        }).filter((point: { value: string; }) => point.value !== '')
+                        symbolSize: 12,
+                        itemStyle: {
+                            color: '#FFD700'
+                        },
+                        z: 10
                     }
-                }]
+                ]
             });
         }
     }
