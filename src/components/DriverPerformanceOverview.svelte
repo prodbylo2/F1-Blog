@@ -132,7 +132,7 @@
                         symbol: 'circle',
                         symbolSize: 12,
                         itemStyle: {
-                            color: '#800080'  // Purple color
+                            color: '#aa3ddd'  // Purple color
                         },
                         z: 11  // Higher z-index to appear above gold circles
                     }
@@ -390,7 +390,7 @@
         </div>
 
         <div class="charts-container">
-            <div class="chart-wrapper">
+            <div class="chart-wrapper points-chart-wide">
                 <div bind:this={pointsChartEl} class="echarts-container"></div>
             </div>
             <div class="chart-wrapper">
@@ -579,6 +579,10 @@
         border-radius: 8px;
         padding: 1rem;
         min-height: 300px;
+    }
+
+    .chart-wrapper.points-chart-wide {
+        grid-column: span 2;
     }
 
     .echarts-container {
