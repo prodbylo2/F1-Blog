@@ -12,6 +12,7 @@
     import { 
         CanvasRenderer 
     } from 'echarts/renderers';
+    import { fade, slide } from 'svelte/transition';
     import { getDriverSeasonStats, getAllDriverIds, getDriverName } from '../lib/utils/driverAnalytics';
 
     // Register necessary ECharts components
@@ -57,7 +58,7 @@
                 },
                 tooltip: {
                     trigger: 'axis',
-                    formatter: function(params) {
+                    formatter: function(params: { dataIndex: string | number; }[]) {
                         const point = driverStats.pointsProgression[params[0].dataIndex];
                         return `
                             <b>${point.race}</b><br/>
@@ -144,130 +145,266 @@
     function getDriverNameSafe(id: string | null): string {
         return id ? getDriverName(id) : 'Unknown Driver';
     }
+
+    // Add state for table expansion
+    let isTableExpanded = false;
 </script>
 
 {#if driverStats}
     <div class="driver-performance-overview">
-        <h2>Driver Performance Overview: {getDriverNameSafe(driverId)}</h2>
+        <div class="header">
+            <h2>Driver Performance Overview</h2>
+            <div class="driver-select">
+                <select bind:value={driverId}>
+                    {#each drivers as driver}
+                        <option value={driver}>{getDriverNameSafe(driver)}</option>
+                    {/each}
+                </select>
+            </div>
+        </div>
         
-        <div class="stats-summary">
+        <div class="stats-grid">
             <div class="stat-card">
-                <h3>Season Summary</h3>
-                <p>Wins: {driverStats.wins} ({driverStats.winPercentage.toFixed(1)}%)</p>
-                <p>Podiums: {driverStats.podiums} ({driverStats.podiumPercentage.toFixed(1)}%)</p>
-                <p>Avg. Finishing Position: {driverStats.averageFinishingPosition.toFixed(2)}</p>
-                <p>DNF Rate: {driverStats.dnfRate.toFixed(1)}%</p>
+                <span class="stat-label">Wins</span>
+                <span class="stat-value">{driverStats.wins}</span>
+                <span class="stat-subtext">{driverStats.winPercentage.toFixed(1)}% win rate</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Podiums</span>
+                <span class="stat-value">{driverStats.podiums}</span>
+                <span class="stat-subtext">{driverStats.podiumPercentage.toFixed(1)}% podium rate</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Average Position</span>
+                <span class="stat-value">{driverStats.averageFinishingPosition.toFixed(1)}</span>
+                <span class="stat-subtext">across the season</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">DNFs</span>
+                <span class="stat-value">{driverStats.dnfs}</span>
+                <span class="stat-subtext">{driverStats.dnfRate.toFixed(1)}% DNF rate</span>
             </div>
         </div>
 
         <div class="charts-container">
             <div class="chart-wrapper">
-                <div 
-                    bind:this={pointsChartEl} 
-                    class="echarts-container"
-                ></div>
+                <div bind:this={pointsChartEl} class="echarts-container"></div>
             </div>
             <div class="chart-wrapper">
-                <div 
-                    bind:this={positionChartEl} 
-                    class="echarts-container"
-                ></div>
+                <div bind:this={positionChartEl} class="echarts-container"></div>
             </div>
         </div>
 
-        <div class="race-results">
-            <h3>Race Results</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Race</th>
-                        <th>Grid</th>
-                        <th>Finish</th>
-                        <th>Race Points</th>
-                        <th>Sprint Points</th>
-                        <th>Total Points</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {#each driverStats.raceResults as result}
-                        <tr>
-                            <td>{result.raceName}</td>
-                            <td>{result.gridPosition || 'N/A'}</td>
-                            <td>{result.position || 'N/A'}</td>
-                            <td>{result.racePoints}</td>
-                            <td>{result.sprintPoints}</td>
-                            <td>{result.points}</td>
-                            <td>{result.status}</td>
-                        </tr>
-                    {/each}
-                </tbody>
-            </table>
+        <div class="race-results-container">
+            <div class="results-header" on:click={() => isTableExpanded = !isTableExpanded} on:keydown={(e) => e.key === 'Enter' && (isTableExpanded = !isTableExpanded)} role="button" tabindex="0">
+                <h3>Race Results</h3>
+                <span class="expand-icon">{isTableExpanded ? '−' : '+'}</span>
+            </div>
+            
+            {#if isTableExpanded}
+                <div class="table-wrapper" transition:slide={{ duration: 300 }}>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Race</th>
+                                <th>Grid</th>
+                                <th>Finish</th>
+                                <th>Race Points</th>
+                                <th>Sprint Points</th>
+                                <th>Total Points</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {#each driverStats.raceResults as result}
+                                <tr>
+                                    <td>{result.raceName}</td>
+                                    <td>{result.gridPosition || 'N/A'}</td>
+                                    <td>{result.position || 'N/A'}</td>
+                                    <td>{result.racePoints}</td>
+                                    <td>{result.sprintPoints}</td>
+                                    <td>{result.points}</td>
+                                    <td>{result.status}</td>
+                                </tr>
+                            {/each}
+                        </tbody>
+                    </table>
+                </div>
+            {/if}
         </div>
     </div>
 {/if}
 
-<div>
-    <label for="driver-select">Select a Driver:</label>
-    <select 
-        id="driver-select" 
-        bind:value={driverId}
-    >
-        {#each drivers as driver}
-            <option value={driver}>{getDriverNameSafe(driver)}</option>
-        {/each}
-    </select>
-</div>
-
 <style>
     .driver-performance-overview {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 20px;
+        padding: 1rem;
+        color: var(--text);
     }
 
-    .stats-summary {
+    .header {
         display: flex;
-        justify-content: center;
-        margin-bottom: 20px;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding: 0 1rem;
+    }
+
+    h2 {
+        margin: 0;
+        font-size: 1.8rem;
+        color: var(--primary);
+    }
+
+    .driver-select select {
+        background-color: var(--secondary);
+        color: var(--text);
+        border: 2px solid var(--primary);
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .driver-select select:hover {
+        border-color: var(--accent);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+        padding: 0 1rem;
     }
 
     .stat-card {
-        background-color: #f4f4f4;
+        background: var(--secondary);
         border-radius: 8px;
-        padding: 15px;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
         text-align: center;
+        transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        color: var(--text);
+        opacity: 0.8;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: var(--primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-subtext {
+        font-size: 0.8rem;
+        color: var(--text);
+        opacity: 0.6;
     }
 
     .charts-container {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 20px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+        padding: 0 1rem;
     }
 
     .chart-wrapper {
-        width: 48%;
-        height: 400px;
+        background: var(--secondary);
+        border-radius: 8px;
+        padding: 1rem;
+        min-height: 300px;
     }
 
     .echarts-container {
         width: 100%;
-        height: 100%;
+        height: 300px;
     }
 
-    .race-results table {
+    .race-results-container {
+        background: var(--secondary);
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin: 0 1rem;
+    }
+
+    .results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .results-header:hover {
+        color: var(--primary);
+    }
+
+    .expand-icon {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: var(--primary);
+        transition: transform 0.3s ease;
+    }
+
+    .results-header:hover .expand-icon {
+        transform: scale(1.2);
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+        margin-top: 1rem;
+    }
+
+    table {
         width: 100%;
         border-collapse: collapse;
-    }
-
-    .race-results th, 
-    .race-results td {
-        border: 1px solid #ddd;
-        padding: 8px;
         text-align: left;
     }
 
-    .race-results th {
-        background-color: #f2f2f2;
+    th {
+        background-color: rgba(255, 255, 255, 0.1);
+        padding: 1rem;
+        font-weight: 600;
+        color: var(--primary);
+    }
+
+    td {
+        padding: 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    tr:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    @media (max-width: 768px) {
+        .header {
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        }
+
+        .charts-container {
+            grid-template-columns: 1fr;
+        }
     }
 </style>

@@ -1,9 +1,12 @@
 <script>
-  import { onMount } from 'svelte';
   import { fade, slide } from 'svelte/transition';
+  import DriverPerformanceOverview from './DriverPerformanceOverview.svelte';
   
   let isMenuOpen = false;
   let showStats = false;
+  /**
+     * @type {number}
+     */
   let scrollY;
 
   // Toggle mobile menu
@@ -70,15 +73,17 @@
 </nav>
 
 {#if showStats}
-  <div class="stats-modal" transition:fade>
+  <div class="modal" transition:fade>
     <button 
-      class="stats-overlay" 
+      class="modal-overlay" 
       on:click={toggleStats}
+      on:keydown={(e) => e.key === 'Escape' && toggleStats()}
       type="button"
       aria-label="Close stats overlay"
     ></button>
-    <div class="stats-content" transition:slide>
-      <button class="close-button" on:click={toggleStats} type="button" aria-label="Close">×</button>
+    <div class="modal-content" transition:slide>
+      <button class="close-button" on:click={toggleStats}>&times;</button>
+      <DriverPerformanceOverview />
     </div>
   </div>
 {/if}
@@ -238,7 +243,7 @@
     color: var(--accent);
   }
 
-  .stats-modal {
+  .modal {
     position: fixed;
     top: 0;
     left: 0;
@@ -250,7 +255,7 @@
     z-index: 2000;
   }
 
-  .stats-overlay {
+  .modal-overlay {
     position: absolute;
     top: 0;
     left: 0;
@@ -258,9 +263,11 @@
     bottom: 0;
     background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(5px);
+    border: none;
+    cursor: pointer;
   }
 
-  .stats-content {
+  .modal-content {
     position: relative;
     background: var(--background);
     border-radius: 8px;
@@ -289,20 +296,5 @@
 
   .close-button:hover {
     color: var(--accent);
-  }
-
-  /* Make sure scrollbar matches theme */
-  .stats-content::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  .stats-content::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-  }
-
-  .stats-content::-webkit-scrollbar-thumb {
-    background: var(--accent);
-    border-radius: 4px;
   }
 </style>
