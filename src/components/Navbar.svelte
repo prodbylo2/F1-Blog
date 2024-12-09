@@ -1,7 +1,6 @@
 <script>
   import { onMount } from 'svelte';
   import { fade, slide } from 'svelte/transition';
-  import DriverStatistics from './DriverStatistics.svelte';
   
   let isMenuOpen = false;
   let showStats = false;
@@ -80,7 +79,6 @@
     ></button>
     <div class="stats-content" transition:slide>
       <button class="close-button" on:click={toggleStats} type="button" aria-label="Close">×</button>
-      <DriverStatistics />
     </div>
   </div>
 {/if}
