@@ -583,6 +583,11 @@
 
     .chart-wrapper.points-chart-wide {
         grid-column: span 2;
+        min-height: 450px;
+    }
+
+    .points-chart-wide .echarts-container {
+        height: 450px;
     }
 
     .echarts-container {
