@@ -17,6 +17,7 @@
     } from 'echarts/renderers';
     import { slide } from 'svelte/transition';
     import { getDriverSeasonStats, getAllDriverIds, getDriverName } from '../lib/utils/driverAnalytics';
+    import ConstructorPerformanceOverview from './ConstructorPerformanceOverview.svelte';
 
     // Register necessary ECharts components
     echarts.use([
@@ -324,6 +325,7 @@
 
     // Driver selection dropdown
     let drivers: string[] = [];
+    let activeTab = 'drivers';
     onMount(() => {
         drivers = getAllDriverIds();
         window.addEventListener('resize', handleResize);
@@ -364,127 +366,137 @@
                     {/each}
                 </select>
             </div>
+            <div class="tab-select">
+                <button class={`tab-button ${activeTab === 'drivers' ? 'active' : ''}`} on:click={() => activeTab = 'drivers'}>Drivers</button>
+                <button class={`tab-button ${activeTab === 'constructors' ? 'active' : ''}`} on:click={() => activeTab = 'constructors'}>Constructors</button>
+            </div>
         </div>
         
-        <div class="stats-grid">
-            <div class="stat-card">
-                <span class="stat-label">Wins</span>
-                <span class="stat-value">{driverStats.wins}</span>
-                <span class="stat-subtext">{driverStats.winPercentage.toFixed(1)}% win rate</span>
+        {#if activeTab === 'drivers'}
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-label">Wins</span>
+                    <span class="stat-value">{driverStats.wins}</span>
+                    <span class="stat-subtext">{driverStats.winPercentage.toFixed(1)}% win rate</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Podiums</span>
+                    <span class="stat-value">{driverStats.podiums}</span>
+                    <span class="stat-subtext">{driverStats.podiumPercentage.toFixed(1)}% podium rate</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Average Position</span>
+                    <span class="stat-value">{driverStats.averageFinishingPosition.toFixed(1)}</span>
+                    <span class="stat-subtext">across the season</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">DNFs</span>
+                    <span class="stat-value">{driverStats.dnfs}</span>
+                    <span class="stat-subtext">{driverStats.dnfRate.toFixed(1)}% DNF rate</span>
+                </div>
             </div>
-            <div class="stat-card">
-                <span class="stat-label">Podiums</span>
-                <span class="stat-value">{driverStats.podiums}</span>
-                <span class="stat-subtext">{driverStats.podiumPercentage.toFixed(1)}% podium rate</span>
-            </div>
-            <div class="stat-card">
-                <span class="stat-label">Average Position</span>
-                <span class="stat-value">{driverStats.averageFinishingPosition.toFixed(1)}</span>
-                <span class="stat-subtext">across the season</span>
-            </div>
-            <div class="stat-card">
-                <span class="stat-label">DNFs</span>
-                <span class="stat-value">{driverStats.dnfs}</span>
-                <span class="stat-subtext">{driverStats.dnfRate.toFixed(1)}% DNF rate</span>
-            </div>
-        </div>
 
-        <div class="charts-container">
-            <div class="chart-wrapper points-chart-wide">
-                <div bind:this={pointsChartEl} class="echarts-container"></div>
-            </div>
-            <div class="chart-wrapper">
-                <div bind:this={positionChartEl} class="echarts-container"></div>
-            </div>
-            <div class="chart-wrapper">
-                <div bind:this={qualifyingDeltaChartEl} class="echarts-container"></div>
-            </div>
-            {#if driverStats.headToHeadComparison}
-                <div class="chart-wrapper">
-                    <div class="head-to-head-container">
-                        <div class="chart-header">
-                            <h3>Head-to-Head: {getDriverName(driverId)} vs {driverStats.headToHeadComparison.teammate}</h3>
-                        </div>
-                        <div bind:this={headToHeadChartEl} class="echarts-container"></div>
-                    </div>
+            <div class="charts-container">
+                <div class="chart-wrapper points-chart-wide">
+                    <div bind:this={pointsChartEl} class="echarts-container"></div>
                 </div>
                 <div class="chart-wrapper">
-                    <div class="head-to-head-stats-container">
-                        <div class="chart-header">
-                            <h3>Season Performance Comparison</h3>
-                        </div>
-                        <div class="head-to-head-stats-grid">
-                            <div class="head-to-head-stat-column">
-                                <div class="head-to-head-stat-item">
-                                    <span class="head-to-head-stat-label">Total Races</span>
-                                    <span class="head-to-head-stat-value">{driverStats.headToHeadComparison.stats.totalRaces}</span>
-                                </div>
-                                <div class="head-to-head-stat-item">
-                                    <span class="head-to-head-stat-label">{driverStats.headToHeadComparison.teammate} Wins</span>
-                                    <span class="head-to-head-stat-value">{driverStats.headToHeadComparison.stats.teammateWins}</span>
-                                </div>
-                                <div class="head-to-head-stat-item">
-                                    <span class="head-to-head-stat-label">{driverStats.headToHeadComparison.teammate} Win %</span>
-                                    <span class="head-to-head-stat-value">{driverStats.headToHeadComparison.stats.teammateWinPercentage.toFixed(1)}%</span>
-                                </div>
+                    <div bind:this={positionChartEl} class="echarts-container"></div>
+                </div>
+                <div class="chart-wrapper">
+                    <div bind:this={qualifyingDeltaChartEl} class="echarts-container"></div>
+                </div>
+                {#if driverStats.headToHeadComparison}
+                    <div class="chart-wrapper">
+                        <div class="head-to-head-container">
+                            <div class="chart-header">
+                                <h3>Head-to-Head: {getDriverName(driverId)} vs {driverStats.headToHeadComparison.teammate}</h3>
                             </div>
-                            <div class="head-to-head-stat-column">
-                                <div class="head-to-head-stat-item">
-                                    <span class="head-to-head-stat-label">Completed Races</span>
-                                    <span class="head-to-head-stat-value">{driverStats.headToHeadComparison.stats.completedRaces}</span>
+                            <div bind:this={headToHeadChartEl} class="echarts-container"></div>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <div class="head-to-head-stats-container">
+                            <div class="chart-header">
+                                <h3>Season Performance Comparison</h3>
+                            </div>
+                            <div class="head-to-head-stats-grid">
+                                <div class="head-to-head-stat-column">
+                                    <div class="head-to-head-stat-item">
+                                        <span class="head-to-head-stat-label">Total Races</span>
+                                        <span class="head-to-head-stat-value">{driverStats.headToHeadComparison.stats.totalRaces}</span>
+                                    </div>
+                                    <div class="head-to-head-stat-item">
+                                        <span class="head-to-head-stat-label">{driverStats.headToHeadComparison.teammate} Wins</span>
+                                        <span class="head-to-head-stat-value">{driverStats.headToHeadComparison.stats.teammateWins}</span>
+                                    </div>
+                                    <div class="head-to-head-stat-item">
+                                        <span class="head-to-head-stat-label">{driverStats.headToHeadComparison.teammate} Win %</span>
+                                        <span class="head-to-head-stat-value">{driverStats.headToHeadComparison.stats.teammateWinPercentage.toFixed(1)}%</span>
+                                    </div>
                                 </div>
-                                <div class="head-to-head-stat-item">
-                                    <span class="head-to-head-stat-label">{getDriverName(driverId)} Wins</span>
-                                    <span class="head-to-head-stat-value">{driverStats.headToHeadComparison.stats.driverWins}</span>
-                                </div>
-                                <div class="head-to-head-stat-item">
-                                    <span class="head-to-head-stat-label">{getDriverName(driverId)} Win %</span>
-                                    <span class="head-to-head-stat-value">{driverStats.headToHeadComparison.stats.driverWinPercentage.toFixed(1)}%</span>
+                                <div class="head-to-head-stat-column">
+                                    <div class="head-to-head-stat-item">
+                                        <span class="head-to-head-stat-label">Completed Races</span>
+                                        <span class="head-to-head-stat-value">{driverStats.headToHeadComparison.stats.completedRaces}</span>
+                                    </div>
+                                    <div class="head-to-head-stat-item">
+                                        <span class="head-to-head-stat-label">{getDriverName(driverId)} Wins</span>
+                                        <span class="head-to-head-stat-value">{driverStats.headToHeadComparison.stats.driverWins}</span>
+                                    </div>
+                                    <div class="head-to-head-stat-item">
+                                        <span class="head-to-head-stat-label">{getDriverName(driverId)} Win %</span>
+                                        <span class="head-to-head-stat-value">{driverStats.headToHeadComparison.stats.driverWinPercentage.toFixed(1)}%</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            {/if}
-        </div>
-
-        <div class="race-results-container">
-            <div class="results-header" on:click={() => isTableExpanded = !isTableExpanded} on:keydown={(e) => e.key === 'Enter' && (isTableExpanded = !isTableExpanded)} role="button" tabindex="0">
-                <h3>Race Results</h3>
-                <span class="expand-icon">{isTableExpanded ? '−' : '+'}</span>
+                {/if}
             </div>
-            
-            {#if isTableExpanded}
-                <div class="table-wrapper" transition:slide={{ duration: 300 }}>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Race</th>
-                                <th>Grid</th>
-                                <th>Finish</th>
-                                <th>Race Points</th>
-                                <th>Sprint Points</th>
-                                <th>Total Points</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {#each driverStats.raceResults as result}
+
+            <div class="race-results-container">
+                <div class="results-header" on:click={() => isTableExpanded = !isTableExpanded} on:keydown={(e) => e.key === 'Enter' && (isTableExpanded = !isTableExpanded)} role="button" tabindex="0">
+                    <h3>Race Results</h3>
+                    <span class="expand-icon">{isTableExpanded ? '−' : '+'}</span>
+                </div>
+                
+                {#if isTableExpanded}
+                    <div class="table-wrapper" transition:slide={{ duration: 300 }}>
+                        <table>
+                            <thead>
                                 <tr>
-                                    <td>{result.raceName}</td>
-                                    <td>{result.gridPosition || 'N/A'}</td>
-                                    <td>{result.position || 'N/A'}</td>
-                                    <td>{result.racePoints}</td>
-                                    <td>{result.sprintPoints}</td>
-                                    <td>{result.points}</td>
-                                    <td>{result.status}</td>
+                                    <th>Race</th>
+                                    <th>Grid</th>
+                                    <th>Finish</th>
+                                    <th>Race Points</th>
+                                    <th>Sprint Points</th>
+                                    <th>Total Points</th>
+                                    <th>Status</th>
                                 </tr>
-                            {/each}
-                        </tbody>
-                    </table>
-                </div>
-            {/if}
-        </div>
+                            </thead>
+                            <tbody>
+                                {#each driverStats.raceResults as result}
+                                    <tr>
+                                        <td>{result.raceName}</td>
+                                        <td>{result.gridPosition || 'N/A'}</td>
+                                        <td>{result.position || 'N/A'}</td>
+                                        <td>{result.racePoints}</td>
+                                        <td>{result.sprintPoints}</td>
+                                        <td>{result.points}</td>
+                                        <td>{result.status}</td>
+                                    </tr>
+                                {/each}
+                            </tbody>
+                        </table>
+                    </div>
+                {/if}
+            </div>
+        {/if}
+
+        {#if activeTab === 'constructors'}
+            <ConstructorPerformanceOverview />
+        {/if}
     </div>
 {/if}
 
@@ -736,5 +748,29 @@
         .header {
             flex-direction: column;
         }
+    }
+
+    .tab-select {
+        margin-top: 1rem;
+    }
+
+    .tab-button {
+        background-color: var(--secondary);
+        color: var(--text);
+        border: 2px solid var(--primary);
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .tab-button:hover {
+        border-color: var(--accent);
+    }
+
+    .tab-button.active {
+        background-color: var(--primary);
+        color: var(--text);
     }
 </style>

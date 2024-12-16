@@ -193,3 +193,181 @@ export function getDriverName(driverId) {
 
     return driverNames[driverId] || driverId;
 }
+
+export function getConstructorSeasonStats(constructorId) {
+    const races = Object.values(raceData.races['2024']);
+
+    const raceResults = races.map(race => {
+        const results = race.results.race.filter(r => r.constructorId === constructorId);
+        const totalPoints = results.reduce((acc, r) => acc + r.points, 0);
+        const dnfCount = results.filter(r => r.status !== 'Finished').length;
+        return {
+            raceName: race.info.name,
+            totalPoints,
+            dnfCount,
+            driverResults: results
+        };
+    });
+
+    // Calculate constructor statistics
+    const totalRaces = raceResults.length;
+    const completedRaces = raceResults.filter(r => r.driverResults.length > 0);
+    const combinedDriverPoints = completedRaces.reduce((acc, r) => acc + r.totalPoints, 0);
+
+    return {
+        raceResults,
+        totalRaces,
+        completedRaces: completedRaces.length,
+        combinedDriverPoints,
+        dnfCount: raceResults.reduce((acc, r) => acc + r.dnfCount, 0)
+    };
+}
+
+export function getConstructorStandingChanges(constructorId) {
+    const races = Object.values(raceData.races['2024']);
+    const standings = races.map(race => {
+        // Logic to calculate standing changes for the constructor
+        return {
+            raceName: race.info.name,
+            position: race.standings.constructors.find(c => c.constructorId === constructorId)?.position
+        };
+    });
+    return standings;
+}
+
+export function getConstructorPointsProgression(constructorId) {
+    const races = Object.values(raceData.races['2024']);
+    const pointsProgression = races.map(race => {
+        const totalPoints = race.results.race
+            .filter(r => r.constructorId === constructorId)
+            .reduce((acc, r) => acc + r.points, 0);
+        return {
+            raceName: race.info.name,
+            points: totalPoints
+        };
+    });
+    return pointsProgression;
+}
+
+export function getConstructorReliabilityStatistics(constructorId) {
+    const races = Object.values(raceData.races['2024']);
+    const reliabilityStats = races.map(race => {
+        const dnfCount = race.results.race
+            .filter(r => r.constructorId === constructorId && r.status !== 'Finished').length;
+        return {
+            raceName: race.info.name,
+            dnfCount
+        };
+    });
+    return reliabilityStats;
+}
+
+export function getPerformanceByCircuitType(constructorId) {
+    const races = Object.values(raceData.races['2024']);
+    const performanceByCircuit = races.reduce((acc, race) => {
+        const circuitType = race.info.circuit.circuitName; // Assuming circuit type can be derived from the circuit name
+        const totalPoints = race.results.race
+            .filter(r => r.constructorId === constructorId)
+            .reduce((sum, r) => sum + r.points, 0);
+        if (!acc[circuitType]) {
+            acc[circuitType] = 0;
+        }
+        acc[circuitType] += totalPoints;
+        return acc;
+    }, {});
+    return performanceByCircuit;
+}
+
+export function getCombinedDriverPoints(constructorId) {
+    const races = Object.values(raceData.races['2024']);
+    let totalCombinedPoints = 0;
+
+    races.forEach(race => {
+        const raceResults = race.results.race;
+        const constructorResults = raceResults.filter(r => r.constructorId === constructorId);
+
+        // Sum points from both drivers in the constructor
+        const racePoints = constructorResults.reduce((acc, r) => acc + r.points, 0);
+        const sprintPoints = race.results.sprint?.results
+            ? race.results.sprint.results.filter(r => r.constructorId === constructorId).reduce((acc, r) => acc + r.points, 0) : 0;
+
+        console.log(`Race: ${race.info.name}, Race Points: ${racePoints}, Sprint Points: ${sprintPoints}`);
+
+        totalCombinedPoints += racePoints + sprintPoints;
+    });
+
+    console.log(`Total Combined Points for ${constructorId}: ${totalCombinedPoints}`);
+
+    return totalCombinedPoints;
+}
+
+export function getConstructorFastestLaps(constructorId) {
+    const races = Object.values(raceData.races['2024']);
+    const fastestLaps = races.map(race => {
+        const driverResults = race.results.race.filter(r => r.constructorId === constructorId);
+        const fastestLap = driverResults.reduce((fastest, current) => {
+            return (current.fastestLap && (!fastest || current.fastestLap.time < fastest.fastestLap.time)) ? current : fastest;
+        }, null);
+        return {
+            raceName: race.info.name,
+            time: fastestLap ? fastestLap.fastestLap.time : null
+        };
+    });
+    return fastestLaps;
+}
+
+export function getConstructorPitStopStatistics(constructorId) {
+    const races = Object.values(raceData.races['2024']);
+    const pitStopStats = races.map(race => {
+        const driverResults = race.results.race.filter(r => r.constructorId === constructorId);
+        const totalPitStops = driverResults.reduce((total, current) => {
+            return total + (current.pitStops ? current.pitStops.length : 0);
+        }, 0);
+        
+        return {
+            raceName: race.info.name,
+            count: totalPitStops,
+            averageTime: driverResults.reduce((total, current) => {
+                if (!current.pitStops || current.pitStops.length === 0) return total;
+                const avgTime = current.pitStops.reduce((sum, stop) => sum + stop.duration, 0) / current.pitStops.length;
+                return total + avgTime;
+            }, 0) / (driverResults.length || 1)
+        };
+    });
+    return pitStopStats;
+}
+
+export function getAllConstructorIds() {
+    return Object.keys(TEAM_MAPPING);
+}
+
+export function getConstructorName(constructorId) {
+    const names = {
+        'red_bull': 'Red Bull Racing',
+        'ferrari': 'Ferrari',
+        'mercedes': 'Mercedes',
+        'mclaren': 'McLaren',
+        'aston_martin': 'Aston Martin',
+        'alpine': 'Alpine',
+        'alfa_romeo': 'Alfa Romeo',
+        'haas': 'Haas F1',
+        'williams': 'Williams',
+        'rb': 'Racing Bulls'
+    };
+    return names[constructorId] || constructorId;
+}
+
+export function getConstructorFastestLapsCount(constructorId) {
+    let fastestLapCount = 0;
+
+    for (const raceId in raceData.races["2024"]) {
+        const raceResults = raceData.races["2024"][raceId].results.race;
+        raceResults.forEach(result => {
+            if (result.constructorId === constructorId && result.fastestLap && result.fastestLap.wasFastest) {
+                fastestLapCount++;
+            }
+        });
+    }
+
+    return fastestLapCount;
+}
