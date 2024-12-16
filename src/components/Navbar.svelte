@@ -2,9 +2,11 @@
   import { onMount } from 'svelte';
   import { fade, slide } from 'svelte/transition';
   import DriverStatistics from './DriverStatistics.svelte';
+  import F1Chat from './F1Chat.svelte';
   
   let isMenuOpen = false;
   let showStats = false;
+  let showChat = false;
   let scrollY;
 
   // Toggle mobile menu
@@ -15,6 +17,14 @@
   // Toggle stats modal
   const toggleStats = () => {
     showStats = !showStats;
+    if (isMenuOpen) {
+      isMenuOpen = false;
+    }
+  };
+
+  // Toggle chat modal
+  const toggleChat = () => {
+    showChat = !showChat;
     if (isMenuOpen) {
       isMenuOpen = false;
     }
@@ -42,6 +52,7 @@
       <a href="/" class="nav-link">Home</a>
       <a href="/races" class="nav-link">Races</a>
       <button class="nav-link stats-button" on:click={toggleStats}>Driver Stats</button>
+      <button class="nav-link chat-button" on:click={toggleChat}>F1 Chat</button>
       <a href="/drivers" class="nav-link">Drivers</a>
       <a href="/teams" class="nav-link">Teams</a>
     </div>
@@ -50,6 +61,7 @@
       <a href="/" class="nav-link">Home</a>
       <a href="/races" class="nav-link">Races</a>
       <button class="nav-link stats-button" on:click={toggleStats}>Driver Stats</button>
+      <button class="nav-link chat-button" on:click={toggleChat}>F1 Chat</button>
       <a href="/drivers" class="nav-link">Drivers</a>
       <a href="/teams" class="nav-link">Teams</a>
     </div>
@@ -81,6 +93,21 @@
     <div class="stats-content" transition:slide>
       <button class="close-button" on:click={toggleStats} type="button" aria-label="Close">×</button>
       <DriverStatistics />
+    </div>
+  </div>
+{/if}
+
+{#if showChat}
+  <div class="chat-modal" transition:fade>
+    <button 
+      class="chat-overlay" 
+      on:click={toggleChat}
+      type="button"
+      aria-label="Close chat overlay"
+    ></button>
+    <div class="chat-content" transition:slide>
+      <button class="close-button" on:click={toggleChat} type="button" aria-label="Close">×</button>
+      <F1Chat />
     </div>
   </div>
 {/if}
@@ -225,7 +252,8 @@
     }
   }
 
-  .stats-button {
+  .stats-button,
+  .chat-button {
     background: none;
     border: none;
     color: var(--text);
@@ -236,43 +264,44 @@
     text-decoration: none;
   }
 
-  .stats-button:hover {
+  .stats-button:hover,
+  .chat-button:hover {
     color: var(--accent);
   }
 
-  .stats-modal {
+  .stats-modal,
+  .chat-modal {
     position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
+    width: 100%;
+    height: 100%;
     display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
+    justify-content: flex-end;
+    z-index: 1000;
   }
 
-  .stats-overlay {
+  .stats-overlay,
+  .chat-overlay {
     position: absolute;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(5px);
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
   }
 
-  .stats-content {
+  .stats-content,
+  .chat-content {
     position: relative;
-    background: var(--background);
-    border-radius: 8px;
-    width: 90%;
-    max-width: 1200px;
-    max-height: 90vh;
-    overflow-y: auto;
-    z-index: 2001;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    background: var(--secondary);
     padding: 2rem;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
+    overflow-y: auto;
   }
 
   .close-button {
