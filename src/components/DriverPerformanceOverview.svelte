@@ -492,6 +492,30 @@
     .driver-performance-overview {
         padding: 1rem;
         color: var(--text);
+        max-height: calc(100vh - 2rem);
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--primary) var(--secondary);
+    }
+
+    /* For Webkit browsers (Chrome, Safari) */
+    .driver-performance-overview::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .driver-performance-overview::-webkit-scrollbar-track {
+        background: var(--secondary);
+        border-radius: 4px;
+    }
+
+    .driver-performance-overview::-webkit-scrollbar-thumb {
+        background-color: var(--primary);
+        border-radius: 4px;
+        border: 2px solid var(--secondary);
+    }
+
+    .driver-performance-overview::-webkit-scrollbar-thumb:hover {
+        background-color: var(--accent);
     }
 
     .header {

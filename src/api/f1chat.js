@@ -1,5 +1,14 @@
 // F1 Chat API service
 
+const TIRE_COLORS = {
+    'SOFT': '#ff0000',
+    'MEDIUM': '#ffff00',
+    'HARD': '#ffffff',
+    'INTERMEDIATE': '#00ff00',
+    'WET': '#0000ff',
+    'UNKNOWN': '#808080'
+};
+
 export async function fetchDriverNumber(driverName) {
     try {
         const url = 'https://api.openf1.org/v1/drivers';
@@ -88,7 +97,6 @@ export function formatResponse(driverName, year, countryName, sessions, sessionS
     
     // Prepare data for ECharts
     const chartData = [];
-    let currentLap = 0;
 
     sessions.forEach(session => {
         const startDate = new Date(session.date_start).toLocaleString();
@@ -118,7 +126,6 @@ export function formatResponse(driverName, year, countryName, sessions, sessionS
         textResponse += '\n';
     });
 
-    // Create ECharts options
     const chartOptions = {
         title: {
             text: `${driverName}'s Tyre Stints - ${countryName} ${year}`,
@@ -158,21 +165,14 @@ export function formatResponse(driverName, year, countryName, sessions, sessionS
         series: [
             {
                 type: 'custom',
-                renderItem: function(params, api) {
+                renderItem: function(_params, api) {
                     const categoryIndex = api.value(0);
                     const start = api.coord([api.value(1), categoryIndex]);
                     const end = api.coord([api.value(2), categoryIndex]);
                     const height = api.size([0, 1])[1] * 0.6;
                     
                     const compound = api.value(3);
-                    const color = {
-                        'SOFT': '#ff0000',
-                        'MEDIUM': '#ffff00',
-                        'HARD': '#ffffff',
-                        'INTERMEDIATE': '#00ff00',
-                        'WET': '#0000ff',
-                        'UNKNOWN': '#808080'
-                    }[compound] || '#808080';
+                    const color = TIRE_COLORS[compound] || TIRE_COLORS['UNKNOWN'];
 
                     return {
                         type: 'rect',
@@ -240,7 +240,7 @@ export async function processChatQuery(query) {
         };
     }
 
-    const year = yearMatch[0];
+    const year = parseInt(yearMatch[0], 10);
     const driverName = driverMatch[0];
     const countryName = countryMatch[0];
 
