@@ -101,15 +101,16 @@
 {/if}
 
 {#if showChat}
-  <div class="chat-modal" transition:fade>
+  <div class="modal" transition:fade>
     <button 
-      class="chat-overlay" 
+      class="modal-overlay" 
       on:click={toggleChat}
+      on:keydown={(e) => e.key === 'Escape' && toggleChat()}
       type="button"
       aria-label="Close chat overlay"
     ></button>
-    <div class="chat-content" transition:slide>
-      <button class="close-button" on:click={toggleChat} type="button" aria-label="Close">×</button>
+    <div class="modal-content" transition:slide>
+      <button class="close-button" on:click={toggleChat}>&times;</button>
       <F1Chat />
     </div>
   </div>
@@ -279,48 +280,55 @@
     width: 100%;
     height: 100%;
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
+    align-items: center;
     z-index: 1000;
   }
 
   .modal-overlay {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(5px);
+    width: 100%;
+    height: 100%;
+    background: var(--background);
     border: none;
-    cursor: pointer;
   }
 
   .modal-content {
-    position: relative;
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
-    max-width: 100%;
     height: 100%;
-    background: var(--secondary);
-    padding: 2rem;
-    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
-    overflow-y: auto;
+    background: var(--background);
+    padding: 1rem;
+    overflow: hidden;
+    z-index: 1001;
   }
 
   .close-button {
-    position: absolute;
+    position: fixed;
     top: 1rem;
     right: 1rem;
     background: none;
     border: none;
     color: var(--text);
-    font-size: 2rem;
+    font-size: 1.5rem;
     cursor: pointer;
-    padding: 0.5rem;
-    line-height: 1;
-    z-index: 2002;
+    z-index: 1002;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    transition: var(--transition);
   }
 
   .close-button:hover {
     color: var(--accent);
+    background: rgba(255, 255, 255, 0.2);
   }
 </style>
