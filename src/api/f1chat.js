@@ -78,31 +78,139 @@ export async function fetchSessionInfo(year, countryName) {
 
 export function formatResponse(driverName, year, countryName, sessions, sessionStints) {
     if (!sessions || sessions.length === 0) {
-        return `No sessions found for ${countryName} ${year}.`;
+        return {
+            text: `No sessions found for ${countryName} ${year}.`,
+            chartOptions: null
+        };
     }
 
-    let response = `${driverName}'s stints in ${countryName} ${year}:\n\n`;
+    let textResponse = `${driverName}'s stints in ${countryName} ${year}:\n\n`;
     
+    // Prepare data for ECharts
+    const chartData = [];
+    let currentLap = 0;
+
     sessions.forEach(session => {
         const startDate = new Date(session.date_start).toLocaleString();
         const stints = sessionStints[session.session_key] || [];
         
-        response += `${session.session_name}: ${startDate}\n`;
+        textResponse += `${session.session_name}: ${startDate}\n`;
         
         if (stints.length === 0) {
-            response += `No stint data available for this session.\n`;
+            textResponse += `No stint data available for this session.\n`;
         } else {
             stints.forEach(stint => {
-                response += `Stint ${stint.stint_number}: ` +
+                textResponse += `Stint ${stint.stint_number}: ` +
                           `Compound - ${stint.compound}, ` +
                           `Laps - ${stint.lap_start} to ${stint.lap_end}, ` +
                           `Tyre Age - ${stint.tyre_age_at_start} laps at start.\n`;
+
+                // Add data for chart
+                chartData.push({
+                    name: session.session_name,
+                    compound: stint.compound,
+                    startLap: stint.lap_start,
+                    endLap: stint.lap_end,
+                    tyreAge: stint.tyre_age_at_start
+                });
             });
         }
-        response += '\n';
+        textResponse += '\n';
     });
-    
-    return response;
+
+    // Create ECharts options
+    const chartOptions = {
+        title: {
+            text: `${driverName}'s Tyre Stints - ${countryName} ${year}`,
+            left: 'center'
+        },
+        tooltip: {
+            trigger: 'axis',
+            formatter: function(params) {
+                const data = params[0].data;
+                return `${data.name}<br/>` +
+                       `Compound: ${data.compound}<br/>` +
+                       `Laps: ${data.startLap}-${data.endLap}<br/>` +
+                       `Tyre Age at Start: ${data.tyreAge}`;
+            }
+        },
+        legend: {
+            data: ['SOFT', 'MEDIUM', 'HARD', 'INTERMEDIATE', 'WET', 'UNKNOWN'],
+            top: 30
+        },
+        grid: {
+            left: '3%',
+            right: '4%',
+            bottom: '3%',
+            containLabel: true
+        },
+        xAxis: {
+            type: 'value',
+            name: 'Lap Number',
+            nameLocation: 'middle',
+            nameGap: 30
+        },
+        yAxis: {
+            type: 'category',
+            data: [...new Set(chartData.map(item => item.name))].reverse(),
+            name: 'Session'
+        },
+        series: [
+            {
+                type: 'custom',
+                renderItem: function(params, api) {
+                    const categoryIndex = api.value(0);
+                    const start = api.coord([api.value(1), categoryIndex]);
+                    const end = api.coord([api.value(2), categoryIndex]);
+                    const height = api.size([0, 1])[1] * 0.6;
+                    
+                    const compound = api.value(3);
+                    const color = {
+                        'SOFT': '#ff0000',
+                        'MEDIUM': '#ffff00',
+                        'HARD': '#ffffff',
+                        'INTERMEDIATE': '#00ff00',
+                        'WET': '#0000ff',
+                        'UNKNOWN': '#808080'
+                    }[compound] || '#808080';
+
+                    return {
+                        type: 'rect',
+                        shape: {
+                            x: start[0],
+                            y: start[1] - height / 2,
+                            width: end[0] - start[0],
+                            height: height
+                        },
+                        style: {
+                            fill: color
+                        }
+                    };
+                },
+                dimensions: [
+                    {name: 'session', type: 'ordinal'},
+                    {name: 'startLap', type: 'number'},
+                    {name: 'endLap', type: 'number'},
+                    {name: 'compound', type: 'ordinal'},
+                ],
+                encode: {
+                    x: [1, 2],
+                    y: 0
+                },
+                data: chartData.map(stint => [
+                    stint.name,
+                    stint.startLap,
+                    stint.endLap,
+                    stint.compound
+                ])
+            }
+        ]
+    };
+
+    return {
+        text: textResponse,
+        chartOptions: chartOptions
+    };
 }
 
 export async function processChatQuery(query) {
@@ -110,7 +218,7 @@ export async function processChatQuery(query) {
     
     // Basic regex patterns to extract information
     const yearPattern = /\b20\d{2}\b/;
-    const driverPattern = /(?:Max Verstappen|Lewis Hamilton|Charles Leclerc|Carlos Sainz|Lando Norris|George Russell|Sergio Perez|Fernando Alonso)/i;
+    const driverPattern = /(?:Max Verstappen|Lewis Hamilton|Charles Leclerc|Carlos Sainz|Lando Norris|George Russell|Sergio Perez|Fernando Alonso|Liam Lawson|Yuki Tsunoda)/i;
     const countryPattern = /(?:Australia|Austria|Azerbaijan|Bahrain|Belgium|Brazil|Canada|China|Hungary|Italy|Japan|Mexico|Monaco|Netherlands|Saudi Arabia|Singapore|Spain|United Arab Emirates|United Kingdom|United States|Qatar|Las Vegas)/i;
 
     // Extract information from query
@@ -126,7 +234,10 @@ export async function processChatQuery(query) {
 
     // If we don't have all required information
     if (!yearMatch || !driverMatch || !countryMatch) {
-        return "Please provide a query with a year (e.g., 2023), driver name, and country. For example: 'What were Max Verstappen's stints in Brazil 2023?'";
+        return {
+            text: "Please provide a query with a year (e.g., 2023), driver name, and country. For example: 'What were Max Verstappen's stints in Brazil 2023?'",
+            chartOptions: null
+        };
     }
 
     const year = yearMatch[0];
@@ -138,7 +249,10 @@ export async function processChatQuery(query) {
     console.log('Retrieved sessions:', sessions);
 
     if (!sessions) {
-        return `Could not find any sessions for ${countryName} ${year}.`;
+        return {
+            text: `Could not find any sessions for ${countryName} ${year}.`,
+            chartOptions: null
+        };
     }
 
     // Fetch driver number
@@ -146,15 +260,21 @@ export async function processChatQuery(query) {
     console.log('Retrieved driver number:', driverNumber);
     
     if (!driverNumber) {
-        return `Could not find driver number for ${driverName}.`;
+        return {
+            text: `Could not find driver number for ${driverName}.`,
+            chartOptions: null
+        };
     }
 
     // Fetch stints for each session
     const sessionStints = {};
     for (const session of sessions) {
         const stints = await fetchStintsForSession(driverNumber, session.session_key);
-        sessionStints[session.session_key] = stints;
+        if (stints && stints.length > 0) {
+            // Sort stints by stint_number
+            sessionStints[session.session_key] = stints.sort((a, b) => a.stint_number - b.stint_number);
+        }
     }
-    
+
     return formatResponse(driverName, year, countryName, sessions, sessionStints);
 }

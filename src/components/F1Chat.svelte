@@ -1,9 +1,36 @@
 <script>
     import { processChatQuery } from '../api/f1chat';
+    import { onMount, afterUpdate } from 'svelte';
+    import * as echarts from 'echarts';
     
     let messages = [];
     let newMessage = '';
     let loading = false;
+    let charts = new Map();
+
+    afterUpdate(() => {
+        messages.forEach((message, index) => {
+            if (message.role === 'assistant' && message.chartOptions && !charts.has(index)) {
+                const container = document.getElementById(`chart-${index}`);
+                if (container) {
+                    const chart = echarts.init(container, 'dark');
+                    chart.setOption(message.chartOptions);
+                    charts.set(index, chart);
+                }
+            }
+        });
+    });
+
+    onMount(() => {
+        return () => {
+            charts.forEach(chart => chart.dispose());
+            charts.clear();
+        };
+    });
+
+    function handleResize() {
+        charts.forEach(chart => chart.resize());
+    }
 
     async function handleSubmit() {
         if (!newMessage.trim()) return;
@@ -19,8 +46,10 @@
             const response = await processChatQuery(userInput);
             messages = [...messages, { 
                 role: 'assistant', 
-                content: response
+                content: response.text,
+                chartOptions: response.chartOptions
             }];
+
         } catch (error) {
             messages = [...messages, { 
                 role: 'assistant', 
@@ -31,6 +60,8 @@
         }
     }
 </script>
+
+<svelte:window on:resize={handleResize}/>
 
 <div class="chat-container">
     <div class="messages-container">
@@ -45,10 +76,13 @@
                 </ul>
             </div>
         {/if}
-        {#each messages as message}
+        {#each messages as message, i}
             <div class="message {message.role}">
                 <div class="message-content">
                     {#if message.role === 'assistant'}
+                        {#if message.chartOptions}
+                            <div class="chart-container" id="chart-{i}"></div>
+                        {/if}
                         <pre>{message.content}</pre>
                     {:else}
                         {message.content}
@@ -142,16 +176,27 @@
         background-color: #E10600;
         margin-right: auto;
         color: white;
+        width: 100%;
     }
 
     .message-content {
         line-height: 1.5;
+        width: 100%;
     }
 
     .message-content pre {
         white-space: pre-wrap;
-        font-family: inherit;
+        word-wrap: break-word;
         margin: 0;
+        font-family: monospace;
+    }
+
+    .chart-container {
+        width: 100%;
+        height: 400px;
+        margin-bottom: 1rem;
+        background-color: #1a1a1a;
+        border-radius: 4px;
     }
 
     .input-container {
@@ -159,47 +204,43 @@
         padding: 1rem;
         gap: 0.5rem;
         background-color: #2d2d2d;
-        border-top: 1px solid #3d3d3d;
     }
 
     .message-input {
         flex-grow: 1;
         padding: 0.75rem;
-        border: 1px solid #3d3d3d;
+        border: none;
         border-radius: 4px;
-        background-color: #1a1a1a;
+        background-color: #3d3d3d;
         color: white;
     }
 
     .message-input:focus {
         outline: none;
-        border-color: #E10600;
+        box-shadow: 0 0 0 2px #E10600;
     }
 
     .send-button {
-        padding: 0.5rem;
-        background-color: #E10600;
+        padding: 0.75rem;
         border: none;
         border-radius: 4px;
+        background-color: #E10600;
+        color: white;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
     }
 
     .send-button:disabled {
-        background-color: #3d3d3d;
+        background-color: #666;
         cursor: not-allowed;
     }
 
-    .send-button:hover:not(:disabled) {
-        background-color: #cc0500;
-    }
-
-    .typing-indicator {
+    .loading .typing-indicator {
         display: flex;
-        gap: 0.3rem;
+        gap: 0.5rem;
+        padding: 1rem 0;
     }
 
     .typing-indicator span {
@@ -207,19 +248,14 @@
         height: 8px;
         background-color: white;
         border-radius: 50%;
-        animation: bounce 1s infinite;
+        animation: bounce 1.4s infinite ease-in-out;
     }
 
-    .typing-indicator span:nth-child(2) {
-        animation-delay: 0.2s;
-    }
-
-    .typing-indicator span:nth-child(3) {
-        animation-delay: 0.4s;
-    }
+    .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+    .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
 
     @keyframes bounce {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-5px); }
+        0%, 80%, 100% { transform: scale(0); }
+        40% { transform: scale(1); }
     }
 </style>
