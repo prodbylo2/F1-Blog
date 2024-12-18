@@ -49,40 +49,28 @@ export async function getDriversForSeason(season) {
     if (cached) return cached;
 
     try {
-        const response = await axios.get(`${ERGAST_BASE_URL}/${season}/drivers.json`);
-        const drivers = response.data.MRData.DriverTable.Drivers.map(driver => ({
-            id: driver.driverId,
-            code: driver.code,
-            number: driver.permanentNumber,
-            firstName: driver.givenName,
-            lastName: driver.familyName,
-            nationality: driver.nationality
+        // Using driverStandings endpoint to get current constructor information
+        const response = await axios.get(`${ERGAST_BASE_URL}/${season}/driverStandings.json`);
+        const standings = response.data.MRData.StandingsTable.StandingsLists[0]?.DriverStandings || [];
+        
+        const drivers = standings.map(standing => ({
+            id: standing.Driver.driverId,
+            code: standing.Driver.code,
+            number: standing.Driver.permanentNumber,
+            firstName: standing.Driver.givenName,
+            lastName: standing.Driver.familyName,
+            nationality: standing.Driver.nationality,
+            constructor: {
+                id: standing.Constructors[0].constructorId,
+                name: standing.Constructors[0].name,
+                nationality: standing.Constructors[0].nationality
+            }
         }));
+        
         setCacheData(cacheKey, drivers);
         return drivers;
     } catch (error) {
         console.error('Error fetching drivers:', error);
-        throw error;
-    }
-}
-
-// Get all teams (constructors) for a specific season
-export async function getTeamsForSeason(season) {
-    const cacheKey = getCacheKey('constructors', { season });
-    const cached = getCachedData(cacheKey);
-    if (cached) return cached;
-
-    try {
-        const response = await axios.get(`${ERGAST_BASE_URL}/${season}/constructors.json`);
-        const teams = response.data.MRData.ConstructorTable.Constructors.map(constructor => ({
-            id: constructor.constructorId,
-            name: constructor.name,
-            nationality: constructor.nationality
-        }));
-        setCacheData(cacheKey, teams);
-        return teams;
-    } catch (error) {
-        console.error('Error fetching teams:', error);
         throw error;
     }
 }
