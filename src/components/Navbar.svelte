@@ -1,12 +1,14 @@
 <script>
   import { fade, slide } from 'svelte/transition';
   import DriverPerformanceOverview from './DriverPerformanceOverview.svelte';
+  import F1Chat from './F1Chat.svelte';
   
   let isMenuOpen = false;
   let showStats = false;
+  let showChat = false;
   /**
-     * @type {number}
-     */
+   * @type {number}
+   */
   let scrollY;
 
   // Toggle mobile menu
@@ -17,6 +19,14 @@
   // Toggle stats modal
   const toggleStats = () => {
     showStats = !showStats;
+    if (isMenuOpen) {
+      isMenuOpen = false;
+    }
+  };
+
+  // Toggle chat modal
+  const toggleChat = () => {
+    showChat = !showChat;
     if (isMenuOpen) {
       isMenuOpen = false;
     }
@@ -44,6 +54,7 @@
       <a href="/" class="nav-link">Home</a>
       <a href="/races" class="nav-link">Races</a>
       <button class="nav-link stats-button" on:click={toggleStats}>Driver Stats</button>
+      <button class="nav-link chat-button" on:click={toggleChat}>F1 Chat</button>
       <a href="/drivers" class="nav-link">Drivers</a>
       <a href="/teams" class="nav-link">Teams</a>
     </div>
@@ -52,6 +63,7 @@
       <a href="/" class="nav-link">Home</a>
       <a href="/races" class="nav-link">Races</a>
       <button class="nav-link stats-button" on:click={toggleStats}>Driver Stats</button>
+      <button class="nav-link chat-button" on:click={toggleChat}>F1 Chat</button>
       <a href="/drivers" class="nav-link">Drivers</a>
       <a href="/teams" class="nav-link">Teams</a>
     </div>
@@ -83,7 +95,25 @@
     ></button>
     <div class="modal-content" transition:slide>
       <button class="close-button" on:click={toggleStats}>&times;</button>
-      <DriverPerformanceOverview />
+      <div class="scrollable-container">
+        <DriverPerformanceOverview />
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if showChat}
+  <div class="modal" transition:fade>
+    <button 
+      class="modal-overlay" 
+      on:click={toggleChat}
+      on:keydown={(e) => e.key === 'Escape' && toggleChat()}
+      type="button"
+      aria-label="Close chat overlay"
+    ></button>
+    <div class="modal-content" transition:slide>
+      <button class="close-button" on:click={toggleChat}>&times;</button>
+      <F1Chat />
     </div>
   </div>
 {/if}
@@ -228,7 +258,8 @@
     }
   }
 
-  .stats-button {
+  .stats-button,
+  .chat-button {
     background: none;
     border: none;
     color: var(--text);
@@ -239,7 +270,8 @@
     text-decoration: none;
   }
 
-  .stats-button:hover {
+  .stats-button:hover,
+  .chat-button:hover {
     color: var(--accent);
   }
 
@@ -247,54 +279,64 @@
     position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
+    width: 100%;
+    height: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 2000;
+    z-index: 1000;
   }
 
   .modal-overlay {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(5px);
+    width: 100%;
+    height: 100%;
+    background: var(--background);
     border: none;
-    cursor: pointer;
   }
 
   .modal-content {
-    position: relative;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background: var(--background);
-    border-radius: 8px;
-    width: 90%;
-    max-width: 1200px;
-    max-height: 90vh;
-    overflow-y: auto;
-    z-index: 2001;
-    padding: 2rem;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+    padding: 1rem;
+    overflow: hidden;
+    z-index: 1001;
   }
 
   .close-button {
-    position: absolute;
+    position: fixed;
     top: 1rem;
     right: 1rem;
     background: none;
     border: none;
     color: var(--text);
-    font-size: 2rem;
+    font-size: 1.5rem;
     cursor: pointer;
-    padding: 0.5rem;
-    line-height: 1;
-    z-index: 2002;
+    z-index: 1002;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    transition: var(--transition);
   }
 
   .close-button:hover {
     color: var(--accent);
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .scrollable-container {
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 1rem;
   }
 </style>
