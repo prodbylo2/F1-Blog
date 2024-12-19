@@ -1,5 +1,6 @@
-<script lang="ts">
+<script>
     import { onMount } from 'svelte';
+    // @ts-ignore
     import { getAllConstructorIds, getConstructorName, getConstructorSeasonStats, getConstructorStandingChanges, getConstructorPointsProgression, getConstructorReliabilityStatistics, getCombinedDriverPoints, getPerformanceByCircuitType, getConstructorFastestLapsCount, getConstructorPitStopStatistics } from '../lib/utils/driverAnalytics';
     import * as echarts from 'echarts/core';
     import { TitleComponent, TooltipComponent, GridComponent, LegendComponent } from 'echarts/components';
@@ -8,23 +9,23 @@
 
     echarts.use([TitleComponent, TooltipComponent, GridComponent, LegendComponent, LineChart, BarChart, PieChart, CanvasRenderer]);
 
-    export let constructorId: string = 'red_bull';
-    let constructorStats: any = null;
-    let standingChanges: any = null;
-    let pointsProgression: any = null;
-    let reliabilityStats: any = null;
-    let combinedDriverPoints: any = null;
-    let performanceByCircuit: any = null;
-    let fastestLapsCount: number = 0;
-    let pitStopStatistics: any = null;
-    let constructors: string[] = [];
-    let chartInstances: { [key: string]: echarts.ECharts } = {};
+    export let constructorId = 'red_bull';
+    let constructorStats = null;
+    let standingChanges = null;
+    let pointsProgression = null;
+    let reliabilityStats = null;
+    let combinedDriverPoints = null;
+    let performanceByCircuit = null;
+    let fastestLapsCount = 0;
+    let pitStopStatistics = null;
+    let constructors = [];
+    let chartInstances = {};
 
-    let pointsChartEl: HTMLDivElement;
-    let standingChartEl: HTMLDivElement;
-    let reliabilityChartEl: HTMLDivElement;
-    let circuitChartEl: HTMLDivElement;
-    let pitStopChartEl: HTMLDivElement;
+    let pointsChartEl;
+    let standingChartEl;
+    let reliabilityChartEl;
+    let circuitChartEl;
+    let pitStopChartEl;
 
     onMount(() => {
         constructors = getAllConstructorIds();
@@ -57,6 +58,13 @@
     function updateCharts() {
         // Points Progression Chart
         if (pointsChartEl && pointsProgression) {
+            // Calculate cumulative points
+            const cumulativePoints = pointsProgression.reduce((acc, current) => {
+                const totalPoints = acc.length > 0 ? acc[acc.length - 1].combinedPoints + current.combinedPoints : current.combinedPoints;
+                acc.push({ raceName: current.raceName, combinedPoints: totalPoints });
+                return acc;
+            }, []);
+
             if (chartInstances.points) chartInstances.points.dispose();
             chartInstances.points = echarts.init(pointsChartEl);
             chartInstances.points.setOption({
@@ -70,20 +78,20 @@
                 },
                 xAxis: {
                     type: 'category',
-                    data: pointsProgression.map(p => p.raceName),
+                    data: cumulativePoints.map(p => p.raceName),
                     axisLabel: { color: '#fff' }
                 },
                 yAxis: {
                     type: 'value',
-                    name: 'Points',
+                    name: 'Combined Points',
                     nameTextStyle: { color: '#fff' },
                     axisLabel: { color: '#fff' }
                 },
                 series: [{
-                    data: pointsProgression.map(p => p.points),
+                    data: cumulativePoints.map(p => p.combinedPoints),
                     type: 'line',
                     smooth: true,
-                    lineStyle: { width: 3, color: '#5470C6' }
+                    lineStyle: { width: 3, color: '#66CDAA' }
                 }]
             });
         }

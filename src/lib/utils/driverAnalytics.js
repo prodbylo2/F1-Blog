@@ -14,7 +14,11 @@ const TEAM_MAPPING = {
     'rb': ['ricciardo', 'tsunoda']
 };
 
-export function getHeadToHeadComparison(driverId, raceResults) {
+/**
+ * @param {string} driverId
+ * @param {{ raceName: string; position: number | null; racePoints: number; sprintPoints: number; points: number; gridPosition: number | null; status: string | null; performance: any; driverId: any; }[]} _raceResults
+ */
+export function getHeadToHeadComparison(driverId, _raceResults) {
     console.log('Driver ID:', driverId);
     console.log('Team Mapping:', TEAM_MAPPING);
     
@@ -76,6 +80,9 @@ export function getHeadToHeadComparison(driverId, raceResults) {
     };
 }
 
+/**
+ * @param {string} driverId
+ */
 export function getDriverSeasonStats(driverId) {
     const races = Object.values(raceData.races['2024']);
     
@@ -159,14 +166,17 @@ export function getAllDriverIds() {
     
     // Create a mapping of driver IDs to their full names
     const driverMap = firstRace.results.race.reduce((acc, result) => {
-        // You might want to enhance this with more comprehensive driver information
         acc[result.driverId] = result.driverId; // Placeholder for now
         return acc;
+    // @ts-ignore
     }, {});
 
     return Object.keys(driverMap);
 }
 
+/**
+ * @param {string | number} driverId
+ */
 export function getDriverName(driverId) {
     const driverNames = {
         'max_verstappen': 'Max Verstappen',
@@ -194,6 +204,9 @@ export function getDriverName(driverId) {
     return driverNames[driverId] || driverId;
 }
 
+/**
+ * @param {string} constructorId
+ */
 export function getConstructorSeasonStats(constructorId) {
     const races = Object.values(raceData.races['2024']);
 
@@ -223,6 +236,9 @@ export function getConstructorSeasonStats(constructorId) {
     };
 }
 
+/**
+ * @param {string} constructorId
+ */
 export function getConstructorStandingChanges(constructorId) {
     const races = Object.values(raceData.races['2024']);
     const standings = races.map(race => {
@@ -235,20 +251,33 @@ export function getConstructorStandingChanges(constructorId) {
     return standings;
 }
 
+/**
+ * @param {string} constructorId
+ */
 export function getConstructorPointsProgression(constructorId) {
     const races = Object.values(raceData.races['2024']);
     const pointsProgression = races.map(race => {
         const totalPoints = race.results.race
             .filter(r => r.constructorId === constructorId)
             .reduce((acc, r) => acc + r.points, 0);
+        console.log(`Race: ${race.info.name}, Total Points for ${constructorId}: ${totalPoints}`);
         return {
             raceName: race.info.name,
-            points: totalPoints
+            combinedPoints: totalPoints
         };
     });
-    return pointsProgression;
+
+    // Calculate cumulative points
+    return pointsProgression.reduce((acc, current) => {
+        const totalPoints = acc.length > 0 ? acc[acc.length - 1].combinedPoints + current.combinedPoints : current.combinedPoints;
+        acc.push({ raceName: current.raceName, combinedPoints: totalPoints });
+        return acc;
+    }, []);
 }
 
+/**
+ * @param {string} constructorId
+ */
 export function getConstructorReliabilityStatistics(constructorId) {
     const races = Object.values(raceData.races['2024']);
     const reliabilityStats = races.map(race => {
@@ -262,6 +291,9 @@ export function getConstructorReliabilityStatistics(constructorId) {
     return reliabilityStats;
 }
 
+/**
+ * @param {string} constructorId
+ */
 export function getPerformanceByCircuitType(constructorId) {
     const races = Object.values(raceData.races['2024']);
     const performanceByCircuit = races.reduce((acc, race) => {
@@ -278,6 +310,9 @@ export function getPerformanceByCircuitType(constructorId) {
     return performanceByCircuit;
 }
 
+/**
+ * @param {string} constructorId
+ */
 export function getCombinedDriverPoints(constructorId) {
     const races = Object.values(raceData.races['2024']);
     let totalCombinedPoints = 0;
@@ -301,6 +336,9 @@ export function getCombinedDriverPoints(constructorId) {
     return totalCombinedPoints;
 }
 
+/**
+ * @param {string} constructorId
+ */
 export function getConstructorFastestLaps(constructorId) {
     const races = Object.values(raceData.races['2024']);
     const fastestLaps = races.map(race => {
@@ -316,11 +354,15 @@ export function getConstructorFastestLaps(constructorId) {
     return fastestLaps;
 }
 
+/**
+ * @param {string} constructorId
+ */
 export function getConstructorPitStopStatistics(constructorId) {
     const races = Object.values(raceData.races['2024']);
     const pitStopStats = races.map(race => {
         const driverResults = race.results.race.filter(r => r.constructorId === constructorId);
         const totalPitStops = driverResults.reduce((total, current) => {
+            // @ts-ignore
             return total + (current.pitStops ? current.pitStops.length : 0);
         }, 0);
         
@@ -328,7 +370,9 @@ export function getConstructorPitStopStatistics(constructorId) {
             raceName: race.info.name,
             count: totalPitStops,
             averageTime: driverResults.reduce((total, current) => {
+                // @ts-ignore
                 if (!current.pitStops || current.pitStops.length === 0) return total;
+                // @ts-ignore
                 const avgTime = current.pitStops.reduce((sum, stop) => sum + stop.duration, 0) / current.pitStops.length;
                 return total + avgTime;
             }, 0) / (driverResults.length || 1)
@@ -341,6 +385,9 @@ export function getAllConstructorIds() {
     return Object.keys(TEAM_MAPPING);
 }
 
+/**
+ * @param {string | number} constructorId
+ */
 export function getConstructorName(constructorId) {
     const names = {
         'red_bull': 'Red Bull Racing',
@@ -357,12 +404,15 @@ export function getConstructorName(constructorId) {
     return names[constructorId] || constructorId;
 }
 
+/**
+ * @param {any} constructorId
+ */
 export function getConstructorFastestLapsCount(constructorId) {
     let fastestLapCount = 0;
 
     for (const raceId in raceData.races["2024"]) {
         const raceResults = raceData.races["2024"][raceId].results.race;
-        raceResults.forEach(result => {
+        raceResults.forEach((result) => {
             if (result.constructorId === constructorId && result.fastestLap && result.fastestLap.wasFastest) {
                 fastestLapCount++;
             }

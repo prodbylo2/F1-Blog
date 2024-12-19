@@ -1,4 +1,4 @@
-<script lang="ts">
+<script>
     import { onMount, onDestroy } from 'svelte';
     import * as echarts from 'echarts/core';
     import { 
@@ -16,6 +16,7 @@
         CanvasRenderer 
     } from 'echarts/renderers';
     import { slide } from 'svelte/transition';
+    // @ts-ignore
     import { getDriverSeasonStats, getAllDriverIds, getDriverName } from '../lib/utils/driverAnalytics';
     import ConstructorPerformanceOverview from './ConstructorPerformanceOverview.svelte';
 
@@ -32,17 +33,20 @@
     ]);
 
     // Set a default driver
-    export let driverId: string | null = 'VER';
+    export let driverId = 'VER';
 
-    let driverStats: any = null;
-    let pointsChartInstance: echarts.ECharts | null = null;
-    let positionChartInstance: echarts.ECharts | null = null;
-    let qualifyingDeltaChartInstance: echarts.ECharts | null = null;
-    let headToHeadChartInstance: echarts.ECharts | null = null;
-    let pointsChartEl: HTMLElement;
-    let positionChartEl: HTMLElement;
-    let qualifyingDeltaChartEl: HTMLElement;
-    let headToHeadChartEl: HTMLElement;
+    let driverStats = null;
+    let pointsChartInstance = null;
+    let positionChartInstance = null;
+    let qualifyingDeltaChartInstance = null;
+    let headToHeadChartInstance = null;
+    let pointsChartEl;
+    let positionChartEl;
+    let qualifyingDeltaChartEl;
+    let headToHeadChartEl;
+    let drivers = [];
+    let activeTab = 'drivers';
+    let isTableExpanded = false;
 
     // Reactive statement to update stats when driver changes
     $: if (driverId) {
@@ -74,7 +78,7 @@
                 },
                 tooltip: {
                     trigger: 'axis',
-                    formatter: function(params: { dataIndex: string | number; }[]) {
+                    formatter: function(params) {
                         const point = driverStats.pointsProgression[params[0].dataIndex];
                         return `
                             <b>${point.race}</b><br/>
@@ -86,7 +90,7 @@
                 },
                 xAxis: {
                     type: 'category',
-                    data: driverStats.pointsProgression.map((p: { race: any; }) => p.race),
+                    data: driverStats.pointsProgression.map(p => p.race),
                     axisLabel: {
                         color: '#fff'
                     }
@@ -103,7 +107,7 @@
                 },
                 series: [
                     {
-                        data: driverStats.pointsProgression.map((p: { points: any; }) => p.points),
+                        data: driverStats.pointsProgression.map(p => p.points),
                         type: 'line',
                         smooth: true,
                         lineStyle: {
@@ -114,7 +118,7 @@
                     {
                         name: 'Race Wins',
                         type: 'scatter',
-                        data: driverStats.raceResults.map((result: { racePoints: number; }, index: number) => 
+                        data: driverStats.raceResults.map((result, index) => 
                             (result.racePoints === 25 || result.racePoints === 26) ? driverStats.pointsProgression[index].points : null
                         ),
                         symbol: 'circle',
@@ -127,7 +131,7 @@
                     {
                         name: 'Grand Slam',
                         type: 'scatter',
-                        data: driverStats.raceResults.map((result: { racePoints: number; }, index: number) => 
+                        data: driverStats.raceResults.map((result, index) => 
                             result.racePoints === 26 ? driverStats.pointsProgression[index].points : null
                         ),
                         symbol: 'circle',
@@ -154,9 +158,7 @@
                 },
                 tooltip: {
                     trigger: 'axis',
-                    formatter: function(params: {
-                        value: any; name: any; 
-                    }[]) {
+                    formatter: function(params) {
                         const position = params[0].value;
                         return `
                             <b>${params[0].name}</b><br/>
@@ -166,7 +168,7 @@
                 },
                 xAxis: {
                     type: 'category',
-                    data: driverStats.positionChanges.map((p: { race: any; }) => p.race),
+                    data: driverStats.positionChanges.map(p => p.race),
                     axisLabel: {
                         color: '#fff'
                     }
@@ -186,7 +188,7 @@
                 },
                 series: [
                     {
-                        data: driverStats.positionChanges.map((p: { position: any; }) => p.position),
+                        data: driverStats.positionChanges.map(p => p.position),
                         type: 'line',
                         smooth: true,
                         lineStyle: {
@@ -197,7 +199,7 @@
                     {
                         name: 'Race Wins',
                         type: 'scatter',
-                        data: driverStats.raceResults.map((result: { position: number; }, index: number) => 
+                        data: driverStats.raceResults.map((result, index) => 
                             result.position === 1 ? result.position : null
                         ),
                         symbol: 'circle',
@@ -324,8 +326,6 @@
     }
 
     // Driver selection dropdown
-    let drivers: string[] = [];
-    let activeTab = 'drivers';
     onMount(() => {
         drivers = getAllDriverIds();
         window.addEventListener('resize', handleResize);
@@ -347,12 +347,9 @@
     });
 
     // Wrapper function to safely get driver name
-    function getDriverNameSafe(id: string | null): string {
+    function getDriverNameSafe(id) {
         return id ? getDriverName(id) : 'Unknown Driver';
     }
-
-    // Add state for table expansion
-    let isTableExpanded = false;
 </script>
 
 {#if driverStats}
